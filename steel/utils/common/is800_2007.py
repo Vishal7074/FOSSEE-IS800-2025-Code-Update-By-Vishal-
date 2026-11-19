@@ -401,78 +401,30 @@ class IS800_2007(object):
     
 
     @staticmethod
-    def cl_7_5_1_2_equivalent_slenderness_ratio_of_truss_compression_members_loaded_one_leg(length, r_min, b1, b2, t, f_y, bolt_no = 2, fixity = 'Fixed'):
+    def one_leg_angle_stress(length_aa, radius_aa, b1, b2, t, fy, chi_aa, *,
+                             connection, fixed_fraction, E=200000):
+        """14.5.1.2 & Table 12. chi_aa from Table 8(c) for lambda_aa.
+        fixed_fraction 0 = hinged, 1 = fixed. Return fcde in MPa.
+        Separate chi input avoids silently choosing between inconsistent 14.1.2.1
+        printed equation and Table 8. Use the actual connected-leg a-a axis.
         """
-        Calculate the equivalent slenderness ratio of the member as per Cl. 7.5.1.2 (Table 12) of IS 800:2007
-
-        Args:
-            length: actual length of the member about any axis in mm (float)
-            end_1: End condition at end 1 of the member (string)
-            end_2: End condition at end 2 of the member (string)
-            r_min: minimum radius of gyration of the section(angle)
-            b1: leg of section(angle) (float)
-            b2: another leg of section(angle) (float)
-            t : thickness (float)
-            f_y: yield strength (float)
-            bolt_no: number of bolt in the connection (float)
-            fixity = depends on end_1 and end_2 (string)
-
-        Returns:
-            list of
-            equivalent_slenderness_ratio
-            lambda_vv, lambda_psi defined in clause
-            k1, k2, k3
-        """
-        e = math.sqrt(250/f_y )
-        E = 2 * 10 ** 5
-        if bolt_no >= 2:
-            if fixity == 'Fixed':
-                k1 = 0.2
-                k2 = 0.35
-                k3 = 20
-            elif fixity == 'Hinged':
-                k1 = 0.7
-                k2 = 0.6
-                k3 = 5
-            elif fixity == 'Partial':
-                # For partial fixity, interpolate between Fixed and Hinged cases using
-                # recursive calls to this same staticmethod. We must qualify the call
-                # with the class name; an unqualified name here would look for a
-                # module-level function and raise NameError.
-                temp = IS800_2007.cl_7_5_1_2_equivalent_slenderness_ratio_of_truss_compression_members_loaded_one_leg(
-                    length, r_min, b1, b2, t, f_y, bolt_no, fixity='Fixed'
-                )
-                temp2 = IS800_2007.cl_7_5_1_2_equivalent_slenderness_ratio_of_truss_compression_members_loaded_one_leg(
-                    length, r_min, b1, b2, t, f_y, bolt_no, fixity='Hinged'
-                )
-                k1 = (temp[3] + temp2[3]) / 2
-                k2 = (temp[4] + temp2[4]) / 2
-                k3 = (temp[5] + temp2[5]) / 2
-
-        elif bolt_no == 1:
-            if fixity == 'Fixed':
-                k1 = 0.75
-                k2 = 0.35
-                k3 = 20
-            elif fixity == 'Hinged':
-                k1 = 1.25
-                k2 = 0.5
-                k3 = 60
-            elif fixity == 'Partial':
-                temp = IS800_2007.cl_7_5_1_2_equivalent_slenderness_ratio_of_truss_compression_members_loaded_one_leg(
-                    length, r_min, b1, b2, t, f_y, bolt_no, fixity='Fixed'
-                )
-                temp2 = IS800_2007.cl_7_5_1_2_equivalent_slenderness_ratio_of_truss_compression_members_loaded_one_leg(
-                    length, r_min, b1, b2, t, f_y, bolt_no, fixity='Hinged'
-                )
-                k1 = (temp[3] + temp2[3]) / 2
-                k2 = (temp[4] + temp2[4]) / 2
-                k3 = (temp[5] + temp2[5]) / 2
-
-        lambda_vv = (length/ r_min)/(e* math.sqrt(math.pi**2 * E/250))
-        lambda_psi = ((b1 + b2)/(2 * t) )/(e* math.sqrt(math.pi**2 * E/250))
-        equivalent_slenderness_ratio = math.sqrt(k1 + k2 * lambda_vv **2 + k3 * lambda_psi**2)
-        return [equivalent_slenderness_ratio, lambda_vv, lambda_psi, k1, k2, k3]
+        _positive(length_aa, radius_aa, b1, b2, t, fy, E, chi_aa)
+        if chi_aa > 1 or not 0 <= fixed_fraction <= 1:
+            raise ValueError("Invalid reduction factor or restraint fraction")
+        hinged, fixed = {
+            "welded-or-multiple-bolts": ((.401,.420,-1.040),(.798,.563,-2.072)),
+            "single-bolt": ((.374,.415,-2.072),(.418,.547,-1.400)),
+        }[connection]
+        scale = math.sqrt(fy/E)/math.pi
+        slender_aa = length_aa/radius_aa * scale
+        slender_leg = (b1+b2)/(2*t) * scale
+        def factor(row):
+            a, b, c = row
+            return a + b*slender_aa + c*slender_leg
+        kf = factor(hinged) + fixed_fraction*(factor(fixed)-factor(hinged))
+        if kf <= 0:
+            raise ValueError("Non-positive Kf; review applicability")
+        return kf * chi_aa * fy / 1.1
     # ==========================================================================
     """    SECTION  8     DESIGN OF MEMBERS SUBJECTED TO BENDING   """
 
