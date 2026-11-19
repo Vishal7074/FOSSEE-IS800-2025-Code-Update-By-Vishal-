@@ -1204,7 +1204,7 @@ class IS800_2025_Draft:
         if profile == 'profiled':
             _positive(panel_width)
             ratio = panel_width / hw
-            kv = 4 + 5.35 * ratio ** 2 if ratio < 1 else 5.35 + 4 * ratio ** 2
+            kv = 4 + 5.35 * ratio if ratio < 1 else 5.35 + 4 * ratio
             local = kv * math.pi ** 2 * plate / (hw / tw) ** 2
         elif profile == 'sinusoidal':
             _positive(wave_depth)
