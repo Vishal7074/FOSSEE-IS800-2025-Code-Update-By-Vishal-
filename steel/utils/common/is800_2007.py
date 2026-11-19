@@ -1024,6 +1024,18 @@ class IS800_2025_Draft:
         _positive(ky, kz)
         return max(ky, kz) <= 1.4
 
+    @staticmethod
+    def seismic_frame_route(zone, importance):
+        """18.1.2-3. Earthquake-resisting frames only. Special detailing follows IS 18168."""
+        if zone not in ('II', 'III', 'IV', 'V', 'VI') or importance not in (
+                'normal', 'important', 'critical', 'special'):
+            raise ValueError("Unknown seismic zone or importance category")
+        if zone == 'II' and importance == 'important':
+            raise NotImplementedError("18.1.2 and 18.1.3 overlap for important structures in zone II")
+        if zone == 'II' and importance == 'normal':
+            return "ordinary-permitted"
+        return "special-required"
+
 
 IS800_2025_Project = IS800_2025_Draft
 
