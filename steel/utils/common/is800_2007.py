@@ -990,18 +990,7 @@ class IS800_2007(object):
     # cl. 10.4.6 Combined shear and Tension for friction grip bolts
     @staticmethod
     def cl_10_4_6_friction_bolt_combined_shear_and_tension(V_sf, V_df, T_f, T_df):
-        """Calculate combined shear and tension of friction grip bolt
-                Args:
-                   V_sf - applied factored shear at design load
-                   V_df - design shear strength
-                   T_f - externally applied factored tension at design load
-                   T_df - design tension strength
-                return:
-                    combined shear and friction value
-                Note:
-                    Reference:
-                    IS 800:2007,  cl 10.4.6
-        """
+        """Draft 17.4.6. Retained project calculation and units."""
         return (V_sf / V_df) ** 2 + (T_f / T_df) ** 2
 
     @staticmethod
