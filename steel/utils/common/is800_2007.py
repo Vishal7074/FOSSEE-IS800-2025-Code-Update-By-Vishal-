@@ -1021,19 +1021,15 @@ class IS800_2007(object):
         return min(size, thin)
 
     @staticmethod
+    def weld_max_throat(t1, t2, *, special=False):
+        """17.5.3.1. Upper throat limit in mm."""
+        _positive(t1, t2)
+        return min(t1,t2)*(1 if special else .7)
+
+    @staticmethod
     def cl_10_5_3_1_max_weld_throat_thickness(part1_thickness, part2_thickness, special_circumstance=False):
 
-        """Calculate maximum effective throat thickness of fillet weld
-        Args:
-            part1_thickness - Thickness of either plate element being welded in mm (float)
-            part2_thickness - Thickness of other plate element being welded in mm (float)
-            special_circumstance - (Boolean)
-        Returns:
-            maximum effective throat thickness of fillet weld in mm (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.5.3.1
-        """
+        """Draft 17.5.3.1. Retained project calculation and units."""
 
         if special_circumstance is True:
             return min(part1_thickness, part2_thickness)
