@@ -1191,6 +1191,32 @@ class IS800_2025_Draft:
         basic *= math.sqrt(fck) * edge_distance ** 1.5 / 1.8
         return basic * projected_area / isolated_area * corner * direction * eccentricity * cracking * depth
 
+    @staticmethod
+    def corrugated_critical_stresses(hw, tw, E, poisson, pitch_width, iz, *, profile,
+                                     developed_length, panel_width=None, wave_depth=None):
+        """H-2. Both critical stresses, MPa. Use Fig. 38 dimensions w, s or l1+l2.
+        For profiled webs panel_width is max(l1,l2); for sinusoidal webs wave_depth is l3.
+        """
+        _positive(hw, tw, E, pitch_width, iz, developed_length)
+        if not 0 <= poisson < 0.5:
+            raise ValueError("Check Poisson ratio")
+        plate = E / (12 * (1 - poisson ** 2))
+        if profile == 'profiled':
+            _positive(panel_width)
+            ratio = panel_width / hw
+            kv = 4 + 5.35 * ratio ** 2 if ratio < 1 else 5.35 + 4 * ratio ** 2
+            local = kv * math.pi ** 2 * plate / (hw / tw) ** 2
+        elif profile == 'sinusoidal':
+            _positive(wave_depth)
+            kv = 5.35 + wave_depth * developed_length / (hw * tw)
+            local = kv * math.pi ** 2 * plate / (developed_length / tw) ** 2
+        else:
+            raise ValueError("Choose profiled or sinusoidal")
+        dx = plate * tw ** 3 * pitch_width / developed_length
+        dz = E * iz / pitch_width
+        global_stress = 32.4 * (dx * dz ** 3) ** 0.25 / (tw * hw ** 2)
+        return local, global_stress
+
 
 IS800_2025_Project = IS800_2025_Draft
 
