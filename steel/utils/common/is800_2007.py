@@ -937,43 +937,14 @@ class IS800_2007(object):
 
     # cl. 10.3.4 Bearing Capacity of the Bolt
     @staticmethod
-    def cl_10_3_4_bolt_bearing_capacity(f_u, f_ub, t, d, e, p, bolt_hole_type='Standard',
-                                        safety_factor_parameter=KEY_DP_FAB_FIELD):
-
-        """Calculate design bearing strength of a bolt on any plate.
-        Args:
-            f_u     - Ultimate tensile strength of the plate in MPa (float)
-            f_ub    - Ultimate tensile strength of the bolt in MPa (float)
-            t       - Summation of thicknesses of the connected plates in mm as defined in cl. 10.3.4 (float)
-            d       - Diameter of the bolt in mm (float)
-            e       - End distance of the fastener along bearing direction in mm (float)
-            p       - Pitch distance of the fastener along bearing direction in mm (float)
-            bolt_hole_type - Either 'Standard' or 'Over-sized' or 'short_slot' or 'long_slot' (str)
-            safety_factor_parameter - Either 'Field' or 'Shop' (str)
-        return:
-            V_dpb - Design bearing strength of bearing bolt in N (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.3.4
-        """
-        d_0 = IS800_2007.cl_10_2_1_bolt_hole_size(d, bolt_hole_type)
-
-        if p > 0.0:
-            k_b = min(e / (3.0 * d_0), p / (3.0 * d_0) - 0.25, f_ub / f_u, 1.0)
-        else:
-            k_b = min(e / (3.0 * d_0), f_ub / f_u, 1.0)  # calculate k_b when there is no pitch (p = 0)
-
-        k_b = round(k_b, 2)
-        V_npb = 2.5 * k_b * d * t * f_u
-        gamma_mb = IS800_2007.cl_5_4_1_Table_5['gamma_mb'][safety_factor_parameter]
-        V_dpb = V_npb / gamma_mb
-
-        if bolt_hole_type == 'Over-sized' or bolt_hole_type == 'short_slot':
-            V_dpb *= 0.7
-        elif bolt_hole_type == 'long_slot':
-            V_dpb *= 0.5
-
-        return V_dpb
+    def bolt_bearing(fu, fub, thickness, d, d0, end, pitch, *, hole="standard"):
+        """17.3.4. N. For slots use loading normal to slot and the hole width."""
+        _positive(fu, fub, thickness, d, d0, end, pitch)
+        kb = min(end/(3*d0), pitch/(3*d0)-.25, fub/fu, 1)
+        if kb <= 0:
+            raise ValueError("Invalid bearing geometry")
+        factor = {"standard": 1, "oversize": .7, "short-slot": .7, "long-slot": .5}[hole]
+        return 2.5*kb*d*thickness*fu*factor/1.25
 
     @staticmethod
     def cl_10_3_5_bearing_bolt_tension_resistance(f_ub, f_yb, A_sb, A_n, safety_factor_parameter=KEY_DP_FAB_FIELD):
