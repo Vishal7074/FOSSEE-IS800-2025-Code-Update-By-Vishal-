@@ -898,25 +898,12 @@ class IS800_2007(object):
     # cl. 10.3.3 Shear Capacity of Bearing Bolt
 
     @staticmethod
-    def cl_10_3_3_bolt_shear_capacity(f_ub, A_nb, A_sb, n_n, n_s=0, safety_factor_parameter=None):
-        """Calculate design shear strength of bearing bolt
-        Args:
-            f_ub - Ultimate tensile strength of the bolt in MPa (float)
-            A_nb - Net shear area of the bolt at threads in sq. mm  (float)
-            A_sb - Nominal plain shank area of the bolt in sq. mm  (float)
-            n_n - Number of shear planes with threads intercepting the shear plane (int)
-            n_s -  Number of shear planes without threads intercepting the shear plane (int)
-            safety_factor_parameter - Either 'field' or 'shop' (str)
-        return:
-            V_dsb - Design shear strength of bearing bolt in N (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.3.3
-        """
-        V_nsb = f_ub / math.sqrt(3) * (n_n * A_nb + n_s * A_sb)
-        gamma_mb = IS800_2007.cl_5_4_1_Table_5['gamma_mb'][KEY_DP_FAB_SHOP]
-        V_dsb = V_nsb / gamma_mb
-        return V_dsb
+    def bolt_shear(fub, anb, asb, nn, ns=0):
+        """17.3.3, base design shear resistance before applicable reductions (N)."""
+        _positive(fub, anb, asb)
+        if min(nn,ns) < 0 or nn+ns < 1 or int(nn) != nn or int(ns) != ns:
+            raise ValueError("Check shear plane counts")
+        return fub*(nn*anb+ns*asb)/(math.sqrt(3)*1.25)
 
     # cl. 10.3.3.1 Long joints
     @staticmethod
