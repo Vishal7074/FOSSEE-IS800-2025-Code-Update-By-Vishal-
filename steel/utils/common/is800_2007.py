@@ -1102,6 +1102,15 @@ class IS800_2025_Draft:
         _positive(embedment, pyramid_resistance)
         return (1 if embedment < 60 else 2) * pyramid_resistance
 
+    @staticmethod
+    def anchor_interaction(tension, shear, tension_resistance, shear_resistance, *, both_steel):
+        """G-2.4. Return utilisation using the governing capacities from all applicable modes."""
+        _positive(tension_resistance, shear_resistance)
+        if type(both_steel) is not bool or any(not math.isfinite(x) or x < 0 for x in (tension, shear)):
+            raise ValueError("Supply nonnegative demands and identify governing modes")
+        exponent = 2 if both_steel else 1.5
+        return (tension / tension_resistance) ** exponent + (shear / shear_resistance) ** exponent
+
 
 IS800_2025_Project = IS800_2025_Draft
 
