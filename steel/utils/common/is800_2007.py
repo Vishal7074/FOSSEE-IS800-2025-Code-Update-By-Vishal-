@@ -62,62 +62,26 @@ class IS800_2007(object):
         return "Pass" if depth/web_thickness <= limit else "Fail"
 
     @staticmethod
+    def tube_class(diameter, thickness, fy, *, loading):
+        """Table 2(vi). Outside diameter. Axial row has only a Class 3 limit."""
+        _positive(diameter, thickness, fy)
+        limits = {"moment": (47, 66, 85), "axial": (None, None, 86)}
+        return _classify(diameter/thickness, limits[loading], 250/fy)
+
+    @staticmethod
     def Table2_hollow_tube(diameter, thickness, f_y, load='Axial Compression', section_class='Plastic'):
-        """ Calculate the limiting width to thickness ratio; for a hollow tube section in accordance to Table 2
-
-        Args:
-            diameter: diameter of the tube in mm (float or int)
-            thickness: thickness of the tube in mm (float or int)
-            f_y: yield stress of the section material in N/MPa (float or int)
-            load: Type of load ('Axial Compression' or 'Moment') (string)
-            section_class: Class of the section (Class1 - Plastic, Class2 - Compact or Class3 - Semi-compact) (string)
-
-        Returns:
-            Results of the section classification check(s)
-            'Pass', if the section qualifies as the required section_class, 'Fail' if it does not
-
-        Reference: Table 2 and Cl.3.7.2, IS 800:2007
-
-        """
-        epsilon = math.sqrt(250 / f_y)
-
-        ratio = diameter / thickness  # ratio of the web/component
-
-        # Check 1: If the load acting is Moment
-        if load == 'Moment':
-
-            if section_class == 'Plastic':
-                if ratio <= (42 * epsilon ** 2):
-                    check = 'Pass'
-                else:
-                    check = 'Fail'
-            elif section_class == 'Compact':
-                if ratio <= (52 * epsilon ** 2):
-                    check = 'Pass'
-                else:
-                    check = 'Fail'
-            else:
-                if ratio <= (146 * epsilon ** 2):
-                    check = 'Pass'
-                else:
-                    check = 'Fail'
-
-        # Check 1: If the load acting is Axial Compression
-        elif load == 'Axial Compression':
-
-            if section_class == 'Plastic':
-                check = 'Pass'
-            elif section_class == 'Compact':
-                check = 'Pass'
-            else:
-                if ratio <= (88 * epsilon ** 2):
-                    check = 'Pass'
-                else:
-                    check = 'Fail'
-        else:
-            pass
-
-        return check
+        """Table 2(vi). An axial Plastic/Compact limit is not tabulated."""
+        loading = {'Axial Compression': 'axial', 'Moment': 'moment'}[load]
+        classes = ['Plastic', 'Compact', 'Semi-Compact', 'Slender']
+        requested = section_class.capitalize()
+        if requested == 'Semi-compact':
+            requested = 'Semi-Compact'
+        if requested not in classes[:3]:
+            raise ValueError("Select Plastic, Compact or Semi-Compact")
+        actual = IS800_2025_Draft.tube_class(diameter, thickness, f_y, loading=loading)
+        if loading == 'axial' and requested in classes[:2]:
+            return 'Not applicable'
+        return 'Pass' if classes.index(actual) <= classes.index(requested) else 'Fail'
 
     @staticmethod
     def Table2_i(width, thickness, f_y, section_type='Rolled'):
