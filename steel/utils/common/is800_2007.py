@@ -84,56 +84,30 @@ class IS800_2007(object):
         return 'Pass' if classes.index(actual) <= classes.index(requested) else 'Fail'
 
     @staticmethod
+    def outstand_class(width, thickness, fy, *, stress="uniform", compression_fraction=None):
+        """Table 2(i). Nonuniform rows only give Class 1 and 2 limits."""
+        _positive(width, thickness, fy)
+        scale = math.sqrt(250 / fy)
+        if stress == "uniform":
+            return _classify(width/thickness, (8.7, 9.7, 13.6), scale)
+        if stress not in ("tip-compression", "tip-tension"):
+            raise ValueError("Unknown stress distribution")
+        if compression_fraction is None or not 0 < compression_fraction <= 1:
+            raise ValueError("Supply r1 = compressed depth / overall depth")
+        divisor = compression_fraction
+        if stress == "tip-tension":
+            divisor *= math.sqrt(compression_fraction)
+        result = _classify(width/thickness, (8.7, 9.7, None), scale/divisor)
+        if result == "Slender":
+            raise NotImplementedError("Table 2(i) gives no nonuniform Class 3 limit")
+        return result
+
+    @staticmethod
     def Table2_i(width, thickness, f_y, section_type='Rolled'):
-        """ Calculate the limiting width to thickness ratio as per Table 2 for;
-                sr. no i) Outstanding element of compression flange
-
-        Args:
-            width: width of the element in mm (float or int)
-            thickness: thickness of the element in mm (float or int)
-            f_y: yield stress of the section material in MPa (float or int)
-            section_type: Type of section ('Rolled' or 'Welded') (string)
-
-        Returns:
-            A list of values with;
-            1- The class of the section as Plastic, Compact, Semi-compact or Slender on account of the flange
-            2- Ratio
-
-            ['Section Class', 'Ratio']
-
-        Reference: Table 2 and Cl.3.7.2, IS 800:2007
-
-        """
-        epsilon = math.sqrt(250 / f_y)
-        
-        ratio = width / thickness
-
-        if section_type == 'Rolled':
-            if ratio <= (9.4 * epsilon):
-                section_class = 'Plastic'
-            elif ratio <= (10.5 * epsilon):
-                section_class = 'Compact'
-            elif ratio <= (15.7 * epsilon):
-                section_class = 'Semi-Compact'
-            else:
-                section_class = 'Slender'
-        else:
-            if ratio <= (8.4 * epsilon):
-                section_class = 'Plastic'
-            elif ratio <= (9.4 * epsilon):
-                section_class = 'Compact'
-            elif ratio <= (13.6 * epsilon):
-                section_class = 'Semi-Compact'
-            else:
-                section_class = 'Slender'
-        # print(f" flange_class"
-        #             f" width {width}"
-        #             f" thickness {thickness}"
-        #             f" epsilon {epsilon}"
-        #             )
-        # print(f" section_type {section_type}"
-        #       f" section_class {section_class}")
-        return [section_class, ratio]
+        """Table 2(i), uniform compression; same ratios for rolled and welded."""
+        if section_type not in ('Rolled', 'Welded'):
+            raise ValueError("Expected Rolled or Welded")
+        return [IS800_2025_Draft.outstand_class(width, thickness, f_y), width/thickness]
 
     @staticmethod
     def Table2_iii(depth, thickness, f_y, classification_type='Neutral axis at mid-depth'):
