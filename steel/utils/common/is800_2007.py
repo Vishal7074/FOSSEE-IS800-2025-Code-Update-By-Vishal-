@@ -836,16 +836,14 @@ class IS800_2007(object):
 
     # cl. 10.2.3.1 Maximum Spacing
     @staticmethod
+    def max_spacing(t):
+        """17.2.3.1. Thinner plate thickness and maximum spacing in mm."""
+        _positive(t)
+        return min(32*t,300)
+
+    @staticmethod
     def cl_10_2_3_1_max_spacing(plate_thicknesses):
-        """Calculate maximum distance between centre of fasteners
-        Args:
-             plate_thicknesses- List of thicknesses in mm of connected plates (list or tuple)
-        Returns:
-            Maximum distance between centres of adjacent fasteners in mm (float)
-        Note:
-            Reference:
-            IS 800:2007, cl. 10.2.3.1
-        """
+        """Draft 17.2.3.1. Retained project calculation and units."""
         # print(plate_thicknesses)
         t = min(plate_thicknesses)
         return min(32 * t, 300.0)
