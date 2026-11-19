@@ -869,39 +869,14 @@ class IS800_2007(object):
 
     # cl. 10.2.4.3  Maximum Edge Distance
     @staticmethod
-    def cl_10_2_4_3_max_edge_dist(conn_plates_t_fu_fy, corrosive_influences=False):
-        """Calculate maximum end and edge distance
-        Args:
-             conn_plates_t_fu_fy - List of tuples with plate thicknesses in mm, fu in MPa, fy in MPa (list of tuples)
-                                example:- [ (12, 410, 250), (10, 440, 300) ]
-             corrosive_influences - Whether the members are exposed to corrosive influences or not (Boolean)
-        Returns:
-            Maximum edge distance to the nearest line of fasteners from an edge of any un-stiffened part in mm (float)
-        Note:
-            Reference:
-            IS 800:2007, cl. 10.2.4.3
-        """
-        # TODO : Differentiate outer plates and connected plates.
-        t_epsilon_considered = conn_plates_t_fu_fy[0][0] * math.sqrt(250 / float(conn_plates_t_fu_fy[0][2]))
-        t_considered = conn_plates_t_fu_fy[0][0]
-        t_min = t_considered
-        for i in conn_plates_t_fu_fy:
-            t = i[0]
-            f_y = i[2]
-            if f_y > 0:
-                epsilon = math.sqrt(250 / f_y)
-                if t * epsilon <= t_epsilon_considered:
-                    t_epsilon_considered = t * epsilon
-                    t_considered = t
-                if t < t_min:
-                    t_min = t
-
-         # epsilon = math.sqrt(250 / f_y)
-
-        if corrosive_influences is True:
-            return 40.0 + (4 * t_min)
-        else:
-            return 12 * t_epsilon_considered
+    def max_edge(thinner_outer_t, outer_fy, *, corrosive=False, thinnest_connected_t=None):
+        """17.2.4.3. Unstiffened outer edge. Excludes back-to-back tension-member exception."""
+        _positive(thinner_outer_t, outer_fy)
+        limit = 12*thinner_outer_t*math.sqrt(250/outer_fy)
+        if corrosive:
+            _positive(thinnest_connected_t)
+            limit = min(limit, 40+4*thinnest_connected_t)
+        return limit
 
     # -------------------------------------------------------------
     #   10.3 Bearing Type Bolts
