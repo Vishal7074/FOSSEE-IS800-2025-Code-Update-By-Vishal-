@@ -805,43 +805,22 @@ class IS800_2007(object):
 
     # cl. 10.2.1 Clearances for Holes for Fasteners
     @staticmethod
-    def cl_10_2_1_bolt_hole_size(d, bolt_hole_type='Standard'):
-        """Calculate bolt hole diameter as per Table 19 of IS 800:2007
-        Args:
-             d - Nominal diameter of fastener in mm (float)
-             bolt_hole_type - Either 'Standard' or 'Over-sized' or 'short_slot' or 'long_slot' (str)
-        Returns:
-            bolt_hole_size -  Diameter of the bolt hole in mm (float)
-        Note:
-            Reference:
-            IS 800, Table 19 (Cl 10.2.1)
-        TODO:ADD KEY_DISP for for Standard/oversize etc and replace these strings
-        """
-        table_19 = {
-            "12-14": {'Standard': 1.0, 'Over-sized': 3.0, 'short_slot': 4.0, 'long_slot': 2.5},
-            "16-22": {'Standard': 2.0, 'Over-sized': 4.0, 'short_slot': 6.0, 'long_slot': 2.5},
-            "24": {'Standard': 2.0, 'Over-sized': 6.0, 'short_slot': 8.0, 'long_slot': 2.5},
-            "24+": {'Standard': 3.0, 'Over-sized': 8.0, 'short_slot': 10.0, 'long_slot': 2.5}
-        }
-        import re
-        # d = str(re.sub("[^0-9]", "", str(d)))
-        d = int(d)
-
-        if d < 12:
-            clearance = 0
-        elif d <= 14:
-            clearance = table_19["12-14"][bolt_hole_type]
-        elif d <= 22:
-            clearance = table_19["16-22"][bolt_hole_type]
-        elif d <= 24:
-            clearance = table_19["24"][bolt_hole_type]
+    def hole_dimensions(d, hole):
+        """17.2.1 Table 19. Returns (width, length) mm for a circular hole or slot."""
+        _positive(d)
+        if 12 <= d <= 14:
+            clear = (1,3,4)
+        elif 16 <= d <= 22:
+            clear = (2,4,6)
+        elif d == 24:
+            clear = (2,6,8)
+        elif d > 24:
+            clear = (3,8,10)
         else:
-            clearance = table_19["24+"][bolt_hole_type]
-        if bolt_hole_type == 'long_slot':
-            bolt_hole_size = (clearance + 1) * d
-        else:
-            bolt_hole_size = clearance + d
-        return bolt_hole_size
+            raise ValueError("Diameter outside the printed Table 19 rows")
+        normal, oversize, short = clear
+        return {"standard": (d+normal,d+normal), "oversize": (d+oversize,d+oversize),
+                "short-slot": (d+normal,d+short), "long-slot": (d+normal,3.5*d)}[hole]
 
     # cl. 10.2.2 Minimum Spacing
     @staticmethod
