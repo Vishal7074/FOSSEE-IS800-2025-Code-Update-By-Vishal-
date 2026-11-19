@@ -1084,26 +1084,13 @@ class IS800_2007(object):
 
     # cl. 10.5.7.3 Long joints
     @staticmethod
-    def cl_10_5_7_3_weld_long_joint(l_j, t_t):
-
-        """Calculate the reduction factor for long joints in welds
-        Args:
-            l_j - length of joints in the direction of force transfer in mm (float)
-            t_t - throat size of the weld in mm (float)
-        Returns:
-             Reduction factor, beta_lw for long joints in welds (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.5.7.3
-        """
-        if l_j <= 150 * t_t:
-            return 1.0
-        beta_lw = 1.2 - ((0.2 * l_j) / (150 * t_t))
-        if beta_lw >= 1.0:
-            beta_lw = 1.0
-        elif beta_lw <= 0.6:
-            beta_lw = 0.6
-        return beta_lw
+    def weld_long_joint(length, throat):
+        """17.5.7.3. Splice/end connection loaded along its length, where applicable."""
+        _positive(length, throat)
+        beta = min(1, 1.2-.2*length/(150*throat))
+        if beta <= 0:
+            raise ValueError("Printed relation gives a nonpositive factor; review connection")
+        return beta
 
 
     # -------------------------------------------------------------
