@@ -1244,6 +1244,16 @@ class IS800_2025_Draft:
             raise ValueError("Use a nonnegative junction dispersion length in mm")
         return (stiff_length + junction_dispersion) * web_thickness * web_fy / 1.1
 
+    @staticmethod
+    def seismic_anchor_route(earthquake_tension, total_tension):
+        """G-3. Both factored tensile components in N from the same combination.
+        For G-3 establish one G-3.1 load path and check G-3.2 concrete cracking.
+        """
+        _positive(total_tension)
+        if not math.isfinite(earthquake_tension) or earthquake_tension < 0:
+            raise ValueError("Use the tensile component of earthquake force")
+        return "G-2" if earthquake_tension <= 0.2 * total_tension else "G-3"
+
 
 IS800_2025_Project = IS800_2025_Draft
 
