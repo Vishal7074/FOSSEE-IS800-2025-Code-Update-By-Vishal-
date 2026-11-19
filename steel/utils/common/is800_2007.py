@@ -297,21 +297,16 @@ class IS800_2007(object):
 
     # cl. 7.1, Design strength
     @staticmethod
+    def member_compression_ok(area, fcd, axial):
+        """14.1.2. Compression force magnitude in N."""
+        _positive(area, fcd)
+        if not math.isfinite(axial) or axial < 0:
+            raise ValueError("Supply a compression force magnitude")
+        return axial < area*fcd
+
+    @staticmethod
     def cl_7_1_2_design_compressisive_strength_member( effective_area , design_compressive_stress , axial_load ):
-        """
-        Args:
-            effective_area:effective sectional area as defined in 7.3.2                             (float)
-            design_compressive_stress:design compressive stress, obtained as per 7.1.2.1            (float)
-            axial_load:Load acting on column                                                        (float)
-
-        Returns:
-            Design compressive strength
-           'Pass', if the section qualifies as the required section_class, 'Fail' if it does not
-
-        Note:
-            Reference: IS 800 pg34
-            @author:Rutvik Joshi
-        """
+        """Draft 14.1.2. Retained project calculation and units."""
         design_compressive_strength= effective_area * design_compressive_stress                     #area in mm2,stress in kN/mm2
         if axial_load < design_compressive_strength:                                                #kN
             check = 'pass'
