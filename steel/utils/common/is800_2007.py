@@ -583,10 +583,7 @@ class IS800_2007(object):
 
     @staticmethod
     def cl_8_4_2_1_web_buckling_stiff(d, tw, e,type = 1, kv = None):
-        '''nominal shear strength, Vn,of webs with or without
-        intermediate stiffeners as governed by buckling
-
-        Author: Rutvik Joshi    '''
+        """Draft 15.4.2.1. Retained project calculation and units."""
         d_tw = d / tw
         if type == 1 and d_tw <= 67 * e:
             return False
