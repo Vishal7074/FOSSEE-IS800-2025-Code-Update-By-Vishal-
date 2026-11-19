@@ -756,13 +756,17 @@ class IS800_2007(object):
     """    SECTION  9     MEMBER SUBJECTED TO COMBINED FORCES   """
 
     @staticmethod
-    def cl_9_2_2_high_shear_moment(Md, Mfd, b, Ze, fy, gamma_mo):
-        Mdv=Md - b(Md-Mfd)
-        if Mdv <= 1.2*Ze*fy/gamma_mo:
-            return Mdv
-        else:
-            print('Reduced elastic buckling moment error')
-            return 0
+    def high_shear_moment(section_class, md, mfd, ze, fy, shear, design_shear):
+        """16.2.2. Input magnitudes, N and N mm. Use only for 0.6Vd < V <= Vd."""
+        _positive(md, ze, fy, shear, design_shear)
+        if not .6 < shear/design_shear <= 1 or not 0 <= mfd <= md:
+            raise ValueError("Check shear range and flange-only moment")
+        if section_class == "Semi-Compact":
+            return ze*fy/1.1
+        if section_class not in ("Plastic", "Compact"):
+            raise ValueError("Unsupported class")
+        beta = (2*shear/design_shear - 1)**2
+        return min(md - beta*(md-mfd), 1.2*ze*fy/1.1)
     # ==========================================================================
     """   SECTION  10    CONNECTIONS    """
 
