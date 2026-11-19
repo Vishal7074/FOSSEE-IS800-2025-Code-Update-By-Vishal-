@@ -179,6 +179,65 @@ class IS800_2025_Draft:
         return kf * chi_aa * fy / 1.1
 
     @staticmethod
+    def low_shear_moment(section_class, zp, ze, fy, support):
+        """15.2.1.2. Laterally supported beam, low shear and eligible web. N mm."""
+        _positive(zp, ze, fy)
+        modulus = {"Plastic": zp, "Compact": zp, "Semi-Compact": ze}[section_class]
+        cap = {"simply-supported": 1.2, "cantilever": 1.5}[support]
+        return min(modulus, cap*ze)*fy/1.10
+
+    @staticmethod
+    def high_shear_moment(section_class, md, mfd, ze, fy, shear, design_shear):
+        """16.2.2. Input magnitudes, N and N mm. Use only for 0.6Vd < V <= Vd."""
+        _positive(md, ze, fy, shear, design_shear)
+        if not .6 < shear/design_shear <= 1 or not 0 <= mfd <= md:
+            raise ValueError("Check shear range and flange-only moment")
+        if section_class == "Semi-Compact":
+            return ze*fy/1.1
+        if section_class not in ("Plastic", "Compact"):
+            raise ValueError("Unsupported class")
+        beta = (2*shear/design_shear - 1)**2
+        return min(md - beta*(md-mfd), 1.2*ze*fy/1.1)
+
+    @staticmethod
+    def ltb_reduction(lambda_lt, lambda_y, alpha_lt, fm):
+        """15.2.2, doubly symmetric beam with lateral support at ends.
+        Supply dimensionless alpha_lt and fm for the applicable Tables 13 & 14 rows.
+        Returns (phi_LT, chi_LT)."""
+        _positive(lambda_lt, lambda_y, alpha_lt, fm)
+        phi = .5*(1 + fm*((lambda_lt/lambda_y)**2*alpha_lt*(lambda_lt-.2) + lambda_lt**2))
+        root = phi**2 - fm*lambda_lt**2
+        if root < 0:
+            raise ValueError("Non-real reduction factor; check inputs and draft equation")
+        return phi, min(1, fm/(phi+math.sqrt(root)))
+
+    @staticmethod
+    def ltb_moment(section_class, zp, ze, fbd, *, zeff=None):
+        """15.2.2. N mm. Class 4 requires effective modulus at compression fibre."""
+        modulus = {"Plastic": zp, "Compact": zp, "Semi-Compact": ze, "Slender": zeff}[section_class]
+        if modulus is None:
+            raise ValueError("Supply effective modulus for class 4")
+        _positive(modulus, fbd)
+        return modulus*fbd
+
+    @staticmethod
+    def simple_beam_ltb_length(row, length, depth, *, loading):
+        """15.3.1, Table 15 rows i-vii. Effective length in mm."""
+        _positive(length, depth)
+        if row not in range(1, 8):
+            raise ValueError("Table 15 row must be 1 to 7")
+        factors = {"normal": (.70,.75,.80,.85,1,1,1.2),
+                   "destabilizing": (.85,.90,.95,1,1.2,1.2,1.4)}[loading]
+        return factors[row-1]*length + (2*depth if row >= 6 else 0)
+
+    @staticmethod
+    def rolled_beam_fcrb(E, length_over_ry, hf_over_tf):
+        """15.2.2.1 approximation for a non-slender rolled section, in MPa."""
+        _positive(E, length_over_ry, hf_over_tf)
+        return (1.1*math.pi**2*E / length_over_ry**2
+                * math.sqrt(1 + (length_over_ry/hf_over_tf)**2/20))
+
+    @staticmethod
     def tension_yield(ag, fy):
         """13.2, gross section yielding strength (N)."""
         _positive(ag, fy)
@@ -218,6 +277,83 @@ class IS800_2025_Draft:
         return length*restraint_factor
 
     @staticmethod
+    def postcritical_shear(d, tw, fyw, E, nu, *, spacing=None):
+        """15.4.2.2(a). I-girder with transverse stiffeners at supports.
+        Returns nominal shear stress tau_b (MPa). Multiply by Av for nominal N.
+        """
+        _positive(d, tw, fyw, E)
+        if not -1 < nu < .5:
+            raise ValueError("Invalid Poisson ratio")
+        kv = 5.35
+        if spacing is not None:
+            _positive(spacing)
+            aspect = spacing/d
+            kv = 4 + 5.35/aspect**2 if aspect < 1 else 5.35 + 4/aspect**2
+        tau_cr = kv*math.pi**2*E/(12*(1-nu**2)*(d/tw)**2)
+        tau_y = fyw/math.sqrt(3)
+        slender = math.sqrt(tau_y/tau_cr)
+        if slender <= .8:
+            return tau_y
+        if slender < 1.2:
+            return (1-.8*(slender-.8))*tau_y
+        return tau_y/slender**2
+
+    @staticmethod
+    def tension_field(d, c, tw, fyw, av, tau_b, vp, compression_flange, tension_flange):
+        """15.4.2.2(b). Anchored interior panel, stiffeners at supports and panel ends.
+        Each flange tuple is (width mm, thickness mm, fy MPa, axial force N).
+        vp is nominal plastic shear resistance in N. Result is nominal N.
+        """
+        _positive(d, c, tw, fyw, av, tau_b, vp)
+        if c < d:
+            raise ValueError("Tension-field method requires c/d >= 1")
+        phi = math.atan(d/c)/1.5
+        sine = math.sin(phi)
+        def anchorage(flange):
+            b, t, fy, force = flange
+            _positive(b, t, fy)
+            utilisation = abs(force)/(b*t*fy/1.1)
+            if not utilisation <= 1:
+                raise ValueError("Flange force exceeds axial capacity")
+            mfr = .25*b*t*t*fy*(1-utilisation**2)
+            return min(c, 2*math.sqrt(mfr/(fyw*tw))/sine)
+        width = d*math.cos(phi) - (c-anchorage(compression_flange)-anchorage(tension_flange))*sine
+        psi = 1.5*tau_b*math.sin(2*phi)
+        fv = math.sqrt(fyw**2-3*tau_b**2+psi**2) - psi
+        return min(vp, av*tau_b + .9*width*tw*fv*sine)
+
+    @staticmethod
+    def web_thickness_ok(d, tw, fyw, fyf, *, stiffening, spacing=None, edges=2):
+        """15.6.1.1-2. Check serviceability and compression flange buckling."""
+        _positive(d, tw, fyw, fyf)
+        eps_w, eps_f = math.sqrt(250/fyw), math.sqrt(250/fyf)
+        if edges not in (1, 2):
+            raise ValueError("edges must be 1 or 2")
+        if stiffening != "none":
+            if edges != 2 or spacing is None:
+                raise ValueError("Stiffened rows require both edges connected and spacing")
+            _positive(spacing)
+        if stiffening == "none" or (stiffening == "transverse" and spacing > 3*d):
+            sv = (200 if edges == 2 else 90)*eps_w
+            return d/tw <= min(sv, 345*eps_f**2)
+        buckling = 345*(eps_f**2 if spacing >= 1.5*d else eps_f)
+        ratio = d/tw
+        if stiffening == "two-longitudinal":
+            sv = 400*eps_w
+        elif stiffening in ("transverse", "one-longitudinal"):
+            one = stiffening == "one-longitudinal"
+            if one and (spacing > 2.4*d or spacing == .74*d):
+                raise NotImplementedError("Spacing outside explicit 15.6.1.1(c) rows")
+            sv = (250 if one else 200)*eps_w
+            if spacing < .74*d:
+                sv = (340 if one else 270)*eps_w
+            elif spacing < d:
+                ratio = spacing/tw
+        else:
+            raise ValueError("Unknown stiffener arrangement")
+        return ratio <= sv and d/tw <= buckling
+
+    @staticmethod
     def column_table(curve, kl_over_r, fy):
         """Tables 8 and 9. Returns (chi, fcd in MPa) for exact printed grid points."""
         rows = _COLUMN_TABLES[curve]
@@ -229,6 +365,107 @@ class IS800_2025_Draft:
         return chi[index], stress[index]
 
     @staticmethod
+    def gradient_factor(row, ratio=None):
+        """15.2.2 Table 14. Select diagram row 1-8, in printed order.
+        Row 2 uses signed end-moment ratio psi. Rows 4,5,7,8 use M0/Mh.
+        """
+        fixed = {1: 1., 3: 1.05, 6: 1.10}
+        if row in fixed:
+            return fixed[row]
+        if ratio is None or not math.isfinite(ratio):
+            raise ValueError("Supply the ratio for this diagram")
+        x = ratio
+        if row == 2 and -1 <= x <= 1:
+            return 1.25-.1*x-.15*x*x
+        if x >= 0:
+            if row == 4:
+                return 1+1.35*x-.33*x**3 if x < 2 else 1.05
+            if row == 5:
+                return 1.25+.5*x**2-.275*x**4 if x < 1.47 else 1.05
+            if row == 7:
+                return 1+1.25*x-.30*x**3 if x < 2 else 1.10
+            if row == 8:
+                return 1.25+.325*x**2-.175*x**4 if x < 1.5 else 1.10
+        raise ValueError("Unknown diagram or ratio outside its domain")
+
+    @staticmethod
+    def ltb_imperfection(section, *, h_over_b=None, tf=None, zez_over_zey=None):
+        """Table 13. For unequal flanges h_over_b uses smaller flange width."""
+        if section == "other-rolled":
+            return .76
+        if section in ("rolled-unequal", "welded-unequal"):
+            _positive(h_over_b)
+            if section == "rolled-unequal":
+                return .21 if h_over_b <= 2 else .34
+            return .49 if h_over_b <= 2 else .76
+        _positive(tf, zez_over_zey)
+        if section == "rolled":
+            _positive(h_over_b)
+            if h_over_b <= 1.2 or tf > 40:
+                raise NotImplementedError("Repeated h/b condition in Table 13 requires clarification")
+        elif section != "welded":
+            raise ValueError("Unknown section")
+        return min(.12*math.sqrt(zez_over_zey), .34)
+
+    @staticmethod
+    def cantilever_ltb_length(length, support_row, top_row, *, loading):
+        """15.3.3, Table 16. Support a-d and top i-iv numbered 1-4."""
+        _positive(length)
+        if support_row not in range(1,5) or top_row not in range(1,5):
+            raise ValueError("Table 16 row outside 1-4")
+        factors = {
+            "normal": ((3,2.7,2.4,2.1),(2,1.8,1.6,1.4),(1,.9,.8,.7),(.8,.7,.6,.5)),
+            "destabilizing": ((7.5,7.5,4.5,3.6),(5,5,3,2.4),(2.5,2.5,1.5,1.2),(1.4,1.4,.6,.5)),
+        }
+        return length*factors[loading][support_row-1][top_row-1]
+
+    @staticmethod
+    def ltb_elastic_moment(E, G, iy, it, iw, length):
+        """15.2.2.1 simply supported prismatic symmetric section, Mcr in N mm."""
+        _positive(E, G, iy, it, length)
+        if iw < 0:
+            raise ValueError("Warping constant must be nonnegative")
+        k = math.pi**2*E/length**2
+        return math.sqrt(k*iy*(G*it+k*iw))
+
+    @staticmethod
+    def ltb_slenderness(beta_b, zp, ze, fy, mcr):
+        """15.2.2. Dimensionless slenderness from elastic critical moment in N mm."""
+        _positive(beta_b, zp, ze, fy, mcr)
+        return math.sqrt(min(beta_b*zp,1.2*ze)*fy/mcr)
+
+    @staticmethod
+    def holes_may_be_ignored(net_to_gross, fy, fu):
+        """15.2.1.4(a). True when tension flange holes meet the area criterion."""
+        _positive(net_to_gross, fy, fu)
+        if net_to_gross > 1:
+            raise ValueError("Net area exceeds gross area")
+        return net_to_gross >= (fy/fu)*(1.25/1.1)/.9
+
+    @staticmethod
+    def edge_shear_lag_width(width, length_between_inflections, *, element):
+        """15.2.1.5. Conservative effective width in mm."""
+        _positive(width, length_between_inflections)
+        divisor = {"outstand":20, "internal":10}[element]
+        return min(width,length_between_inflections/divisor)
+
+    @staticmethod
+    def web_shear_buckling_required(d, tw, fyw, *, kv=None):
+        """15.4.2.1. Omit kv only for a web without stiffeners."""
+        _positive(d, tw, fyw)
+        factor = 1
+        if kv is not None:
+            _positive(kv)
+            factor = math.sqrt(kv/5.35)
+        return d/tw > 67*math.sqrt(250/fyw)*factor
+
+    @staticmethod
+    def design_shear_yield(av, fy):
+        """15.4.1. Design shear resistance in N where shear yielding governs."""
+        _positive(av, fy)
+        return av*fy/(math.sqrt(3)*1.1)
+
+    @staticmethod
     def member_compression_ok(area, fcd, axial):
         """14.1.2. Compression force magnitude in N."""
         _positive(area, fcd)
@@ -237,10 +474,26 @@ class IS800_2025_Draft:
         return axial < area*fcd
 
     @staticmethod
+    def beam_high_shear(v, vd):
+        """15.2.1.2-3. Supply magnitudes in the same units."""
+        _positive(vd)
+        if not math.isfinite(v) or v < 0:
+            raise ValueError("Supply nonnegative shear magnitude")
+        return v > .6*vd
+
+    @staticmethod
     def compression_stress(chi, fy):
         """14.1.2. Design compressive stress from governing reduction factor."""
         _positive(chi, fy)
         return min(chi,1)*fy/1.1
+
+    @staticmethod
+    def ltb_design_stress(chi_lt, fy):
+        """15.2.2. Beam bending compressive stress in MPa."""
+        _positive(chi_lt, fy)
+        if chi_lt > 1:
+            raise ValueError("chi_LT exceeds unity")
+        return chi_lt*fy/1.1
 
     @staticmethod
     def specialty_fy(grade, thickness):
@@ -258,6 +511,20 @@ class IS800_2025_Draft:
         if values[index] is None:
             raise ValueError("Thickness/grade has no printed yield strength")
         return values[index]
+
+    @staticmethod
+    def end_panel_anchor_forces(d, tw, fy, vcr, vtf, v):
+        """15.5.3. Return Rtf (N) and Mtf (N mm) for tension field anchorage.
+        Use forces on a consistent basis. End stiffener and end post checks are separate.
+        """
+        _positive(d, tw, fy, vcr, vtf, v)
+        vp = d*tw*fy/math.sqrt(3)
+        if not vcr <= v <= vtf or not vcr <= vp:
+            raise ValueError("Check range of tension field forces")
+        hq = 1.25*vp*math.sqrt(1-vcr/vp)
+        if v < vtf:
+            hq *= (v-vcr)/(vtf-vcr)
+        return hq/2, hq*d/10
 
 
 # Printed grid, Tables 8(a-e) and 9(a-e). Each pair contains chi and fcd (MPa).
