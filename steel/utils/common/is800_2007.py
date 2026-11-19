@@ -1051,42 +1051,7 @@ class IS800_2007(object):
 
     # Draft 17.5.3.2: Check minimum achieved throat; remove upward adjustment to 3 mm.
 
-    @staticmethod
-    def cl_10_5_3_2_fillet_weld_effective_throat_thickness_constant(fusion_face_angle=90):
-
-        """Calculate effective throat thickness of fillet weld for stress calculation
-
-        Args:
-            fusion_face_angle - Angle between fusion faces in degrees (int)
-
-        Returns:
-            Effective throat thickness of fillet weld constant
-
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.5.3.2zzz
-
-        """
-        table_22 = {'60-90': 0.70, '91-100': 0.65, '101-106': 0.60, '107-113': 0.55, '114-120': 0.50}
-        fusion_face_angle = int(round(fusion_face_angle))
-        if 60 <= fusion_face_angle <= 90:
-            K = table_22['60-90']
-        elif 91 <= fusion_face_angle <= 100:
-            K = table_22['91-100']
-        elif 101 <= fusion_face_angle <= 106:
-            K = table_22['101-106']
-        elif 107 <= fusion_face_angle <= 113:
-            K = table_22['107-113']
-        elif 114 <= fusion_face_angle <= 120:
-            K = table_22['114-120']
-        else:
-            K = "NOT DEFINED"
-        try:
-            K = float(K)
-        except ValueError:
-            return
-
-        return K
+    # Draft Table 22: Consolidate duplicate K lookup.
 
         # Cl. 10.5.3.3 Effective throat size of groove (butt) welds
 
