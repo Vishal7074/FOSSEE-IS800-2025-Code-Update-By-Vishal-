@@ -1135,6 +1135,20 @@ class IS800_2025_Draft:
         interaction = local * global_factor / math.hypot(local, global_factor)
         return hw * tw * shear_yield * min(local, global_factor, interaction) / 1.1
 
+    @staticmethod
+    def fatigue_constant_range(minimum, maximum, fy, fatigue_range, thickness_factor, gamma, *, stress):
+        """19.5.1-2. Input signed stress extrema in MPa and 19.4 strength for design cycles.
+        Apply separately for normal and shear. Returns individual limit checks.
+        """
+        _positive(fy, fatigue_range, thickness_factor, gamma)
+        if not all(map(math.isfinite, (minimum, maximum))) or minimum > maximum:
+            raise ValueError("Supply ordered, finite stress extrema")
+        elastic_limit = {'normal': fy, 'shear': fy / math.sqrt(3)}[stress]
+        actual_range = maximum - minimum
+        return dict(elastic=max(abs(minimum), abs(maximum)) <= elastic_limit,
+                    range_limit=actual_range <= 1.5 * elastic_limit,
+                    fatigue=actual_range <= thickness_factor * fatigue_range / gamma)
+
 
 IS800_2025_Project = IS800_2025_Draft
 
