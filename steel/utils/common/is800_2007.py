@@ -907,26 +907,14 @@ class IS800_2007(object):
 
     # cl. 10.3.3.1 Long joints
     @staticmethod
-    def cl_10_3_3_1_bolt_long_joint(d, l_j):
-        """ Calculate reduction factor for long joints.
-        Args:
-            l_j = Length of joint of a splice or end connection as defined in cl. 10.3.3.1 (float)
-            d = Nominal diameter of the fastener (float)
-        Return:
-            beta_lj  = Reduction factor for long joints (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.3.3.1
-        """
-        beta_lj = 1.075 - 0.005 * l_j / d
-        if beta_lj <= 0.75:
-            beta_lj = 0.75
-        elif beta_lj >= 1.0:
-            beta_lj = 1.0
-        if l_j >= 15.0 * d:
-            return beta_lj
-        else:
-            return 1.0
+    def bolt_long_joint(d, length, bolt_count, *, uniform_transfer=False):
+        """17.3.3.1 & 17.4.3.1. Shear capacity factor."""
+        _positive(d, bolt_count)
+        if length < 0 or int(bolt_count) != bolt_count:
+            raise ValueError("Invalid joint length or bolt count")
+        if uniform_transfer or bolt_count <= 2 or length <= 15*d:
+            return 1.
+        return max(.75, 1.075-.005*length/d)
 
     # 10.3.3.2 Large grip lengths
     @staticmethod
