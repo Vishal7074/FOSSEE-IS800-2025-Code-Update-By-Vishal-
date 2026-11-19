@@ -1065,6 +1065,43 @@ class IS800_2025_Draft:
             raise ValueError("Supply nonnegative force magnitudes")
         return min(1.2 * fy * gross_area, combination_force, transferable_force), 1.2 * plastic_moment
 
+    @staticmethod
+    def anchor_steel(net_area, fy, fu, *, group, elongation_percent):
+        """G-2.2.1 and G-2.3.1. Steel tension and pure shear (N) for the supplied area.
+        For a group supply active steel area for the applicable load distribution.
+        """
+        _positive(net_area, fy, fu, elongation_percent)
+        if fy > fu or type(group) is not bool:
+            raise ValueError("Check material strengths and group status")
+        ratio = fy / fu
+        gamma_t = max(1.2 / ratio, 1.4)
+        gamma_v = max(1 / ratio, 1.25) if fu <= 800 and ratio <= 0.8 else 1.5
+        ductility_factor = 0.8 if group and elongation_percent < 8 else 1.0
+        return net_area * fu / gamma_t, ductility_factor * 0.5 * net_area * fu / gamma_v
+
+    @staticmethod
+    def anchor_pullout(bearing_area, fck, *, cracked):
+        """G-2.2.2. Head bearing pullout resistance in N, normal-weight M20 to M50 concrete."""
+        _positive(bearing_area)
+        if type(cracked) is not bool or not 20 <= fck <= 50:
+            raise ValueError("Check concrete strength and cracking status")
+        return 6.4 * (1 if cracked else 1.4) * bearing_area * fck
+
+    @staticmethod
+    def anchor_pyramid(fck, embedment, base_area, isolated_area, *, edge, spalling, eccentricity, cracking):
+        """G-2.2.3. Supply actual projected areas and all four geometry/cracking factors."""
+        _positive(embedment, base_area, isolated_area, edge, spalling, eccentricity, cracking)
+        if not 20 <= fck <= 50:
+            raise ValueError("Annex G concrete strength outside M20 to M50")
+        basic = 7.2 * math.sqrt(fck) * embedment ** 1.5 / 2.15
+        return basic * base_area / isolated_area * edge * spalling * eccentricity * cracking
+
+    @staticmethod
+    def anchor_pryout(embedment, pyramid_resistance):
+        """G-2.3.3. Concrete pryout resistance in N from G-2.2.3 pyramid resistance."""
+        _positive(embedment, pyramid_resistance)
+        return (1 if embedment < 60 else 2) * pyramid_resistance
+
 
 IS800_2025_Project = IS800_2025_Draft
 
