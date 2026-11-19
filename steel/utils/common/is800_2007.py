@@ -1162,6 +1162,35 @@ class IS800_2025_Draft:
             raise ValueError("All stages require finite inventories")
         return math.fsum(stages)
 
+    @staticmethod
+    def anchor_splitting(pyramid_with_splitting_spacing, member_depth, embedment):
+        """G-2.2.4. Re-evaluate G-2.2.3 using Scrsp before applying the depth factor."""
+        _positive(pyramid_with_splitting_spacing, member_depth, embedment)
+        return pyramid_with_splitting_spacing * min(1.5, (member_depth / (2 * embedment)) ** (2 / 3))
+
+    @staticmethod
+    def anchor_shear_with_bending(pure_shear_capacity, tension, steel_tension_capacity,
+                                  elastic_modulus_mm3, fu, lever_arm, gamma_shear, *, fixed):
+        """G-2.3.2. Use the elastic section modulus, not Young's modulus; result in N."""
+        _positive(pure_shear_capacity, steel_tension_capacity, elastic_modulus_mm3, fu, lever_arm, gamma_shear)
+        if not math.isfinite(tension) or tension < 0 or type(fixed) is not bool:
+            raise ValueError("Check tensile demand and rotational restraint")
+        remaining = max(0, 1 - tension / steel_tension_capacity)
+        moment = 1.2 * elastic_modulus_mm3 * fu * remaining
+        return min(pure_shear_capacity, (2 if fixed else 1) * moment / (lever_arm * gamma_shear))
+
+    @staticmethod
+    def anchor_edge_shear(diameter, embedment, edge_distance, fck, projected_area, isolated_area,
+                          *, corner, direction, eccentricity, cracking, depth):
+        """G-2.3.4. Supply Figure 37 areas and the five evaluated modification factors."""
+        _positive(diameter, embedment, edge_distance, projected_area, isolated_area,
+                  corner, direction, eccentricity, cracking, depth)
+        if not 20 <= fck <= 50:
+            raise ValueError("Annex G concrete strength outside M20 to M50")
+        basic = 0.45 * math.sqrt(diameter) * (embedment / diameter) ** 0.2
+        basic *= math.sqrt(fck) * edge_distance ** 1.5 / 1.8
+        return basic * projected_area / isolated_area * corner * direction * eccentricity * cracking * depth
+
 
 IS800_2025_Project = IS800_2025_Draft
 
