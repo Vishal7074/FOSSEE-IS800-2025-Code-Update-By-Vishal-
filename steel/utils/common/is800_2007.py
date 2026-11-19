@@ -553,115 +553,16 @@ class IS800_2007(object):
         return factors[row-1]*length + (2*depth if row >= 6 else 0)
 
     @staticmethod
-    def cl_8_3_3_EffLen_Cantilever(Support, Top, length, load) -> float:
-        """ Calculate the Effective Length for Simply Supported Beams as per Table 16 Cl 8.3.3
-
-        Args:
-            Support Restraint: Type of Restraint (string)
-            Warping Restraint: Type of Restraint (string)
-            depth(d): depth of the element in mm (float or int)
-            length(l): length of span in mm (float or int)
-            f_y: yield stress of the section material in MPa (float or int)
-            load: Type of load in member ('Normal') ('Destabilizing')
-
-
-        Returns:
-            Effective length (float)
-
-        Reference: Table 15 Cl 8.3.1, IS 800:2007
-
-        """
-        if load == KEY_DISP_LOAD1:
-            if Support == Support1:
-                if Top == Top1:
-                    length = 3.00 * length
-                if Top == Top2:
-                    length = 2.7 * length
-                if Top == Top3:
-                    length = 2.40 * length
-                if Top == Top4:
-                    length = 2.1 * length
-
-            elif Support == Support2:
-                if Top == Top1:
-                    length = 2.00 * length
-                if Top == Top2:
-                    length = 1.8 * length
-                if Top == Top3:
-                    length = 1.60 * length
-                if Top == Top4:
-                    length = 1.4 * length
-
-
-            elif Support == Support3:
-
-                if Top == Top1:
-                    length = 1.00 * length
-
-                if Top == Top2:
-                    length = 0.9 * length
-
-                if Top == Top3:
-                    length = 0.80 * length
-
-                if Top == Top4:
-                    length = 0.7 * length
-
-            elif Support == Support4:
-                if Top == Top1:
-                    length = 0.80 * length
-                if Top == Top2:
-                    length = 0.7 * length
-                if Top == Top3:
-                    length = 0.6 * length
-                if Top == Top4:
-                    length = 0.5 * length
-        elif load == KEY_DISP_LOAD2:
-            if Support == Support1:
-                if Top == Top1:
-                    length = 7.50 * length
-                if Top == Top2:
-                    length = 7.5 * length
-                if Top == Top3:
-                    length = 4.50 * length
-                if Top == Top4:
-                    length = 3.6 * length
-
-            elif Support == Support2:
-                if Top == Top1:
-                    length = 5.00 * length
-                if Top == Top2:
-                    length = 5 * length
-                if Top == Top3:
-                    length = 3.0 * length
-                if Top == Top4:
-                    length = 2.4 * length
-
-
-            elif Support == Support3:
-
-                if Top == Top1:
-                    length = 2.50 * length
-
-                if Top == Top2:
-                    length = 2.5 * length
-
-                if Top == Top3:
-                    length = 1.50 * length
-
-                if Top == Top4:
-                    length = 1.2 * length
-
-            elif Support == Support4:
-                if Top == Top1:
-                    length = 1.40 * length
-                if Top == Top2:
-                    length = 1.4 * length
-                if Top == Top3:
-                    length = 0.6 * length
-                if Top == Top4:
-                    length = 0.5 * length
-        return length
+    def cantilever_ltb_length(length, support_row, top_row, *, loading):
+        """15.3.3, Table 16. Support a-d and top i-iv numbered 1-4."""
+        _positive(length)
+        if support_row not in range(1,5) or top_row not in range(1,5):
+            raise ValueError("Table 16 row outside 1-4")
+        factors = {
+            "normal": ((3,2.7,2.4,2.1),(2,1.8,1.6,1.4),(1,.9,.8,.7),(.8,.7,.6,.5)),
+            "destabilizing": ((7.5,7.5,4.5,3.6),(5,5,3,2.4),(2.5,2.5,1.5,1.2),(1.4,1.4,.6,.5)),
+        }
+        return length*factors[loading][support_row-1][top_row-1]
     # cl. 8.4.1 shear strength of bolted connections
     @staticmethod
     def cl_8_4_design_shear_strength(A_vg, f_y):
