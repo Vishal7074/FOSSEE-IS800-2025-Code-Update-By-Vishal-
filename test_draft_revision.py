@@ -132,3 +132,9 @@ class RevisionExamples(unittest.TestCase):
     def test_earthquake_anchor_threshold(self):
         self.assertEqual(D.seismic_anchor_route(20, 100), 'G-2')
         self.assertEqual(D.seismic_anchor_route(21, 100), 'G-3')
+
+    def test_original_class_import(self):
+        from steel.utils.common.is800_2007 import IS800_2007
+        self.assertIs(IS800_2007, D)
+        self.assertEqual(IS800_2007.cl_5_4_1_Table_5["gamma_mw"]["Field"], 1.5)
+        self.assertEqual(IS800_2007.cl_10_4_3_Table_20[1], 0.5)

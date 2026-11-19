@@ -34,6 +34,9 @@ class IS800_2025_Draft:
     # Surface treatment row i-xii of 17.4.3, Table 20.
     slip_factors = (0.20, 0.50, 0.10, 0.25, 0.30, 0.52, 0.30, 0.30, 0.50, 0.33, 0.48, 0.10)
 
+    cl_5_4_1_Table_5 = material_factors
+    cl_10_4_3_Table_20 = list(slip_factors)
+
     @staticmethod
     def web_class(width, thickness, fy, *, loading):
         """Table 2(ii). Axial: supply printed b/tf; mid-depth bending: d/tw.
@@ -1270,6 +1273,8 @@ class IS800_2025_Draft:
         return min(fyc * math.sqrt(rc), compression_ltb_stress), fyt * math.sqrt(rt)
 
 
+# The historical import path and class name resolve to this draft on this branch.
+IS800_2007 = IS800_2025_Draft
 IS800_2025_Project = IS800_2025_Draft
 
 # Printed grid, Tables 8(a-e) and 9(a-e). Each pair contains chi and fcd (MPa).
