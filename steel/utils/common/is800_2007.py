@@ -474,17 +474,11 @@ class IS800_2007(object):
         return net_to_gross >= (fy/fu)*(1.25/1.1)/.9
 
     @staticmethod
-    def cl_8_2_1_5_shear_lag(b0,b1, L0, type):
-        if type == 'outstand':
-            if b0<= L0/20 :
-                return b0
-            else :
-                return L0/20
-        else:
-            if b1<= L0/10 :
-                return b1
-            else :
-                return L0/10
+    def edge_shear_lag_width(width, length_between_inflections, *, element):
+        """15.2.1.5. Conservative effective width in mm."""
+        _positive(width, length_between_inflections)
+        divisor = {"outstand":20, "internal":10}[element]
+        return min(width,length_between_inflections/divisor)
 
     @staticmethod
     def cl_8_2_2_Unsupported_beam_bending_strength(Zp, Ze, fcd, section_class):
