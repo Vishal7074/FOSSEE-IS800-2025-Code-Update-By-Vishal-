@@ -671,19 +671,34 @@ class IS800_2007(object):
         return V_cr
 
     @staticmethod
-    def cl_8_4_2_2_Mfr_TensionField(bf, tf, fyf, Nf, gamma_mo):
-        '''based on the post-shear buckling
-            strength, may be used for webs with
-            intermediate transverse stiffeners, in addition
-            to the transverse stiffeners at supports, provided
-            the panels adjacent to the panel under tension
-            field action, or the end posts provide anchorage
-            for the tension fields
+    def tension_field(d, c, tw, fyw, av, tau_b, vp, compression_flange, tension_flange):
+        """15.4.2.2(b). Anchored interior panel, stiffeners at supports and panel ends.
+        Each flange tuple is (width mm, thickness mm, fy MPa, axial force N).
+        vp is nominal plastic shear resistance in N. Result is nominal N.
+        """
+        _positive(d, c, tw, fyw, av, tau_b, vp)
+        if c < d:
+            raise ValueError("Tension-field method requires c/d >= 1")
+        phi = math.atan(d/c)/1.5
+        sine = math.sin(phi)
+        def anchorage(flange):
+            b, t, fy, force = flange
+            _positive(b, t, fy)
+            utilisation = abs(force)/(b*t*fy/1.1)
+            if not utilisation <= 1:
+                raise ValueError("Flange force exceeds axial capacity")
+            mfr = .25*b*t*t*fy*(1-utilisation**2)
+            return min(c, 2*math.sqrt(mfr/(fyw*tw))/sine)
+        width = d*math.cos(phi) - (c-anchorage(compression_flange)-anchorage(tension_flange))*sine
+        psi = 1.5*tau_b*math.sin(2*phi)
+        fv = math.sqrt(fyw**2-3*tau_b**2+psi**2) - psi
+        return min(vp, av*tau_b + .9*width*tw*fv*sine)
 
-        Author: Rutvik Joshi    '''
+    @staticmethod
+    def cl_8_4_2_2_Mfr_TensionField(bf, tf, fyf, Nf, gamma_mo):
+        """Draft 15.4.2.2(b). Retained project calculation and units."""
 
         M_fr = 0.25 * bf * tf ** 2 * fyf * (1 - (Nf / (bf * tf * fyf / gamma_mo)) ** 2)
-        print(M_fr, 'M_fr')
         return  M_fr
     @staticmethod
     def cl_8_4_2_2_TensionField( c, d, tw, fyw, bf,tf, fyf,Nf, gamma_mo, A_v,tau_b,V_p):
