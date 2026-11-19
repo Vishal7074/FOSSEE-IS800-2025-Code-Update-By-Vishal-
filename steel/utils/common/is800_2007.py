@@ -1217,6 +1217,15 @@ class IS800_2025_Draft:
         global_stress = 32.4 * (dx * dz ** 3) ** 0.25 / (tw * hw ** 2)
         return local, global_stress
 
+    @staticmethod
+    def fire_modulus_ratio(temperature):
+        """22.4.2, Fig. 24. Multiply room-temperature E or G by the returned ratio."""
+        if not 0 < temperature <= 1000:
+            raise ValueError("Steel temperature must be in (0, 1000] degrees Celsius")
+        if temperature <= 600:
+            return 1 + temperature / (2000 * math.log(temperature / 1100))
+        return 690 * (1 - temperature / 1000) / (temperature - 53.5)
+
 
 IS800_2025_Project = IS800_2025_Draft
 
