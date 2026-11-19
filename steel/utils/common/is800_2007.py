@@ -579,25 +579,7 @@ class IS800_2007(object):
         return V_d
 
     # cl 8.2.1.2 design bending strength of the cross-section
-    @staticmethod
-    def cl_8_2_1_2_design_moment_strength(Z_e, Z_p, f_y, section_class=''):
-        """ Calculate the design bending strength as per cl. 8.2.1.2
-        Args:
-            Z_e: Elastic section modulus of the cross-section in cubic mm (float)
-            Z_p: Plastic section modulus of the cross-section in cubic mm (float)
-            f_y: Yield stress of the component material in MPa (float)
-            section_class: Classification of the section (plastic, compact or semi-compact) as per Table 2 (str)
-        Returns:
-            Design bending strength of the cross-section in N-mm (float)
-        """
-        gamma_m0 = IS800_2007.cl_5_4_1_Table_5["gamma_m0"]['yielding']
-
-        if section_class == 'semi-compact':
-            M_d = (Z_e * f_y) / gamma_m0  # N-mm
-        else:  # 'compact'
-            M_d = (1.0 * Z_p * f_y) / gamma_m0  # N-mm
-
-        return M_d
+    # Draft 15.2.1.2: Consolidate duplicate method; require support type.
 
     @staticmethod
     def cl_8_4_2_1_web_buckling_stiff(d, tw, e,type = 1, kv = None):
