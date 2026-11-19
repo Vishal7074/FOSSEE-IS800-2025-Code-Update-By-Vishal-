@@ -1004,6 +1004,26 @@ class IS800_2025_Draft:
             raise ValueError("Supported steel temperature is 20 to 905 degrees Celsius")
         return fy20 * min(1.0, (905 - temperature) / 690)
 
+    @staticmethod
+    def frame_analysis_route(critical_factor, ultimate_factor, *, clad_without_infill_stiffness):
+        """11.7.1. Classify the ratio for this frame; no structural solver is implied."""
+        _positive(critical_factor, ultimate_factor)
+        if type(clad_without_infill_stiffness) is not bool:
+            raise ValueError("Specify whether this is the clause 11.7.1(a) frame case")
+        lower, upper = (4.6, 10) if clad_without_infill_stiffness else (5.75, 20)
+        ratio = critical_factor / ultimate_factor
+        if ratio >= upper:
+            return "first-order"
+        if ratio >= lower:
+            return "amplification-permitted"
+        return "second-order"
+
+    @staticmethod
+    def elastic_amplification_allowed(ky, kz):
+        """11.7.2.1(a). Check both moment factors for the elastic amplification route."""
+        _positive(ky, kz)
+        return max(ky, kz) <= 1.4
+
 
 IS800_2025_Project = IS800_2025_Draft
 
