@@ -361,74 +361,38 @@ class IS800_2007(object):
 
     # cl. 7.1.2.1, Buckling Class of Cross-Sections
     @staticmethod
-    def cl_7_1_2_2_buckling_class_of_crosssections(b, h, t_f, cross_section='Rolled I-sections', section_type='Hot rolled'):
-        """
-        Determine the buckling class of the cross-section as per Cl 7.1.2.2 (Table 10) of IS 800:2007
-
-        Args:
-            b: width of the flange
-            h: depth of the section
-            t_f: thickness of the flange
-            cross_section: type of cross-section
-            section_type: Hot rolled or Cold formed
-
-        Returns: Buckling class values about z-z and y-y axis (dictionary)
-        """
-
-        if cross_section == 'Rolled I-sections':
-            if h / b > 1.2:
-                if t_f <= 40:
-                    buckling_class = {
-                        'z-z': 'a',
-                        'y-y': 'b'
-                    }
-                elif 40 <= t_f <= 100:
-                    buckling_class = {
-                        'z-z': 'b',
-                        'y-y': 'c'
-                    }
-                else:  # this case if not derived from the code (for t_f >100mm, buckling class d is assumed about both the axis)
-                    buckling_class = {
-                        'z-z': 'd',
-                        'y-y': 'd'
-                    }
-            elif h / b <= 1.2:
-                if t_f <= 100:
-                    buckling_class = {
-                        'z-z': 'b',
-                        'y-y': 'c'
-                    }
-                if t_f > 100:
-                    buckling_class = {
-                        'z-z': 'd',
-                        'y-y': 'd'
-                    }
-
-        elif cross_section == 'Welded I-section':
-            if t_f <= 40:
-                buckling_class = {
-                    'z-z': 'b',
-                    'y-y': 'c'
-                }
-            if t_f > 40:
-                buckling_class = {
-                    'z-z': 'c',
-                    'y-y': 'd'
-                }
-
-        elif cross_section == 'Hollow Section':
-            if section_type == 'Hot rolled':
-                buckling_class = {
-                    'z-z': 'a',
-                    'y-y': 'a'
-                }
-            else:
-                buckling_class = {
-                    'z-z': 'b',
-                    'y-y': 'b'
-                }
-
-        return buckling_class
+    def buckling_curves(section, fy, *, h=None, b=None, tf=None, tw=None, thick_weld=None):
+        """Table 10. Return curve keys in z-z, y-y order."""
+        _positive(fy)
+        high = fy > 420
+        if section == "rolled-I":
+            _positive(h, b, tf)
+            if h/b == 1.2 or (h/b > 1.2 and tf > 100):
+                raise NotImplementedError("This geometry has no explicit Table 10 row")
+            if h/b > 1.2 and tf <= 40:
+                return ("a0", "a") if high else ("a", "b")
+            if tf <= 100:
+                return ("a", "b") if high else ("b", "c")
+            return ("c", "c") if high else ("d", "d")
+        if section == "welded-I":
+            _positive(tf)
+            if tf == 40:
+                raise NotImplementedError("Table 10 prints strict inequalities at 40 mm")
+            return ("b", "c") if tf < 40 else ("c", "d")
+        if section in ("welded-box", "cruciform"):
+            if thick_weld is None:
+                raise ValueError("Identify whether thick welds are present")
+            curve = "b"
+            if thick_weld:
+                _positive(b, tf, h, tw)
+                if b/tf < 30 and h/tw < 30:
+                    curve = "c"
+        else:
+            curve = {"hot-hollow": "a0" if high else "a",
+                     "cold-hollow": "c" if high else "b",
+                     "channel": "c", "angle": "c", "tee": "c", "solid": "c",
+                     "built-up": "c"}[section]
+        return curve, curve
 
     @staticmethod
     def cl_7_1_2_1_design_compressisive_stress_plategirder(f_y, gamma_mo, effective_slenderness_ratio,
