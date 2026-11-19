@@ -394,36 +394,7 @@ class IS800_2007(object):
                      "built-up": "c"}[section]
         return curve, curve
 
-    @staticmethod
-    def cl_7_1_2_1_design_compressisive_stress_plategirder(f_y, gamma_mo, effective_slenderness_ratio,
-                                               modulus_of_elasticity):
-        """
-        Args:
-            f_y:Yield stress                                                                        (float)
-            gamma_mo:Effective length of member                                                        (float)
-            effective_slenderness_ratio:Euler buckling class                                                       (float)
-            imperfection_factor
-            modulus_of_elasticity
-
-        Returns:
-            list of euler_buckling_stress, nondimensional_effective_slenderness_ratio, phi, stress_reduction_factor, design_compressive_stress_fr .design_compressive_stress, design_compressive_stress_min
-        Note:
-            Reference: IS 800 pg34
-            @author:Rutvik Joshi
-        """
-        # 2.4 - Euler buckling stress
-        imperfection_factor = 0.49
-        euler_buckling_stress = (math.pi ** 2 * modulus_of_elasticity) / effective_slenderness_ratio ** 2
-        nondimensional_effective_slenderness_ratio = math.sqrt(f_y / euler_buckling_stress)
-        phi = 0.5 * (1 + imperfection_factor * (
-                    nondimensional_effective_slenderness_ratio - 0.2) + nondimensional_effective_slenderness_ratio ** 2)
-        # 2.6 - Design compressive stress
-        stress_reduction_factor = 1 / (phi + math.sqrt(phi ** 2 - nondimensional_effective_slenderness_ratio ** 2))
-        design_compressive_stress_fr = f_y * stress_reduction_factor / gamma_mo
-        design_compressive_stress_max = f_y / gamma_mo
-        design_compressive_stress = min(design_compressive_stress_fr, design_compressive_stress_max)
-        # print(f"euler_buckling_stress {euler_buckling_stress} , nondimensional_effective_slenderness_ratio {nondimensional_effective_slenderness_ratio} , phi {phi} , stress_reduction_factor {stress_reduction_factor} , design_compressive_stress_fr {design_compressive_stress_fr} , design_compressive_stress_max {design_compressive_stress_max} , design_compressive_stress {design_compressive_stress}")
-        return design_compressive_stress  
+    # Draft Table 9: Request class c explicitly only when applicable. No automatic class assignment.
 
     @staticmethod
     def cl_7_1_2_1_design_compressisive_stress_fcd_buckling_class_c():
