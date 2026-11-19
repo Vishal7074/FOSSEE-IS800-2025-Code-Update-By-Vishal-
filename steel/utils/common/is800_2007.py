@@ -502,11 +502,16 @@ class IS800_2007(object):
         return X_lt * fy / gamma_mo
 
     @staticmethod
-    def cl_8_2_2_Unsupported_beam_bending_stress_reduction_factor(phi_lt, lambda_lt):
-        si = 1 / ( phi_lt + (phi_lt **2 - lambda_lt **2) ** 0.5)
-        if si > 1.0:
-            si = 1.0
-        return si
+    def ltb_reduction(lambda_lt, lambda_y, alpha_lt, fm):
+        """15.2.2, doubly symmetric beam with lateral support at ends.
+        Supply dimensionless alpha_lt and fm for the applicable Tables 13 & 14 rows.
+        Returns (phi_LT, chi_LT)."""
+        _positive(lambda_lt, lambda_y, alpha_lt, fm)
+        phi = .5*(1 + fm*((lambda_lt/lambda_y)**2*alpha_lt*(lambda_lt-.2) + lambda_lt**2))
+        root = phi**2 - fm*lambda_lt**2
+        if root < 0:
+            raise ValueError("Non-real reduction factor; check inputs and draft equation")
+        return phi, min(1, fm/(phi+math.sqrt(root)))
 
     @staticmethod
     def cl_8_2_2_Unsupported_beam_bending_phi_lt(alpha_lt, lambda_lt):
