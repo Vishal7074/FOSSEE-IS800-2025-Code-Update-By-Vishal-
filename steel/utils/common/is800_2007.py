@@ -533,11 +533,10 @@ class IS800_2007(object):
 
     # Draft 15.2.2.1: Correct squared slenderness denominator in approximation.
     @staticmethod
-    def cl_8_2_2_1_elastic_buckling_moment(betab, Zp, Ze, fy, Mcr, fcrb = 0):
-        if (betab * Zp * fy / Mcr) ** 0.5 <= (1.2 * Ze * fy / Mcr) ** 0.5:
-            return (betab * Zp * fy / Mcr) ** 0.5
-        else:
-            return (1.2 * Ze * fy / Mcr) ** 0.5
+    def ltb_slenderness(beta_b, zp, ze, fy, mcr):
+        """15.2.2. Dimensionless slenderness from elastic critical moment in N mm."""
+        _positive(beta_b, zp, ze, fy, mcr)
+        return math.sqrt(min(beta_b*zp,1.2*ze)*fy/mcr)
 
     @staticmethod
     def cl_8_2_2_1_elastic_buckling_moment_fcrb( fy, fcrb=0):
