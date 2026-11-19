@@ -466,11 +466,12 @@ class IS800_2007(object):
         return v > .6*vd
 
     @staticmethod
-    def cl_8_2_1_4_holes_tension_zone(Anf_Agf, fy, fu, gamma_mo, gamma_m1):
-        if Anf_Agf > (fy/fu) * (gamma_m1/gamma_mo) / 0.9 :
-            return Anf_Agf
-        else :
-            return (fy/fu) * (gamma_m1/gamma_mo) / 0.9
+    def holes_may_be_ignored(net_to_gross, fy, fu):
+        """15.2.1.4(a). True when tension flange holes meet the area criterion."""
+        _positive(net_to_gross, fy, fu)
+        if net_to_gross > 1:
+            raise ValueError("Net area exceeds gross area")
+        return net_to_gross >= (fy/fu)*(1.25/1.1)/.9
 
     @staticmethod
     def cl_8_2_1_5_shear_lag(b0,b1, L0, type):
