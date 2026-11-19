@@ -1254,6 +1254,21 @@ class IS800_2025_Draft:
             raise ValueError("Use the tensile component of earthquake force")
         return "G-2" if earthquake_tension <= 0.2 * total_tension else "G-3"
 
+    @staticmethod
+    def corrugated_flange_stresses(fyc, fyt, bc, tc, transverse_c, transverse_t,
+                                   tension_flange_mpf, compression_ltb_stress):
+        """H-1. Use magnitudes of Fig. 39 flange moments, N mm. Compression LTB stress
+        uses the same pre-gamma basis as ffc. Supply applicable in-plane MPf in N mm.
+        """
+        _positive(fyc, fyt, bc, tc, tension_flange_mpf, compression_ltb_stress)
+        if any(not math.isfinite(x) or x < 0 for x in (transverse_c, transverse_t)):
+            raise ValueError("Use finite transverse moment magnitudes")
+        rc = 1 - 4 * transverse_c * 1.1 / (bc ** 2 * tc * fyc)
+        rt = 1 - transverse_t * 1.1 / tension_flange_mpf
+        if min(rc, rt) < 0:
+            raise ValueError("Transverse bending exceeds flange capacity")
+        return min(fyc * math.sqrt(rc), compression_ltb_stress), fyt * math.sqrt(rt)
+
 
 IS800_2025_Project = IS800_2025_Draft
 
