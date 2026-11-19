@@ -1149,6 +1149,19 @@ class IS800_2025_Draft:
                     range_limit=actual_range <= 1.5 * elastic_limit,
                     fatigue=actual_range <= thickness_factor * fatigue_range / gamma)
 
+    @staticmethod
+    def lifecycle_emissions(*, manufacturing, transport, fabrication, erection, finishing,
+                            commissioning, maintenance, end_of_life):
+        """Total project-supplied stage inventories in kg CO2e for a common boundary.
+        Enter signed credits only once under the project's accounting convention.
+        Section 23 provides principles; the sum supplies no code pass/fail threshold.
+        """
+        stages = (manufacturing, transport, fabrication, erection, finishing,
+                  commissioning, maintenance, end_of_life)
+        if not all(map(math.isfinite, stages)):
+            raise ValueError("All stages require finite inventories")
+        return math.fsum(stages)
+
 
 IS800_2025_Project = IS800_2025_Draft
 
