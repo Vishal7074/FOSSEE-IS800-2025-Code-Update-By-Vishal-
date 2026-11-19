@@ -160,43 +160,19 @@ class IS800_2007(object):
     """    SECTION  3     GENERAL DESIGN REQUIREMENTS   """
 
     @staticmethod
-    def cl_3_8_max_slenderness_ratio(Type = 1):
+    def maximum_slenderness(row, *, sag_avoided=False):
+        """Table 3. Rows i-vi numbered 1-6. None denotes footnote exemption
+        for an applicable tension member. Caller establishes row applicability.
         """
-            1)  A member carrying compressive loads
-                resulting from dead loads and imposed
-                loads
-            2)  A tension member in which a reversal
-                of direct stress occurs due to loads other
-                than wind or seismic forces
-            3)  A member subjected to compression
-                forces resulting only from combination
-                with wind/earthquake actions, provided
-                the deformation of such member does
-                not adversely affect tbe stress in any
-                part of the structure
-            4)  Compression flange of a beam against
-                lateral torsional buckling
-            5)  A member normally acting m a tie in a
-                roof truss or a bracing system not
-                considered effective when subject to
-                possible reversal of stress into
-                compression resulting from the action
-                of wind or earthquake forces]]
-            6)  Members always under tension’) (other
-                than pre-tensioned members)
-        """
-        if Type == 1:
-            return 180
-        elif Type == 2:
-            return 180
-        elif Type == 3:
-            return 180
-        elif Type == 4:
-            return 180
-        elif Type == 5:
-            return 180
-        elif Type == 6:
-            return 180
+        limit = {1: 180, 2: 180, 3: 250, 4: 300, 5: 350, 6: 400}[row]
+        if sag_avoided and row in (5, 6):
+            return None
+        return limit
+
+    @staticmethod
+    def cl_3_8_max_slenderness_ratio(Type=1):
+        """Table 3, clause 10.9.1. Numbering 1-6 follows the six printed cases."""
+        return IS800_2025_Draft.maximum_slenderness(Type)
     # ==========================================================================
     """    SECTION  4     METHODS OF STRUCTURAL ANALYSIS   """
     # ==========================================================================
