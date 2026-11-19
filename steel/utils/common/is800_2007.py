@@ -602,6 +602,28 @@ class IS800_2007(object):
     #     Author: Rutvik Joshi    '''
 
     @staticmethod
+    def postcritical_shear(d, tw, fyw, E, nu, *, spacing=None):
+        """15.4.2.2(a). I-girder with transverse stiffeners at supports.
+        Returns nominal shear stress tau_b (MPa). Multiply by Av for nominal N.
+        """
+        _positive(d, tw, fyw, E)
+        if not -1 < nu < .5:
+            raise ValueError("Invalid Poisson ratio")
+        kv = 5.35
+        if spacing is not None:
+            _positive(spacing)
+            aspect = spacing/d
+            kv = 4 + 5.35/aspect**2 if aspect < 1 else 5.35 + 4/aspect**2
+        tau_cr = kv*math.pi**2*E/(12*(1-nu**2)*(d/tw)**2)
+        tau_y = fyw/math.sqrt(3)
+        slender = math.sqrt(tau_y/tau_cr)
+        if slender <= .8:
+            return tau_y
+        if slender < 1.2:
+            return (1-.8*(slender-.8))*tau_y
+        return tau_y/slender**2
+
+    @staticmethod
     def cl_8_4_2_2_K_v_Simple_postcritical(support, c = 0, d = 1):
 
         if support == 'only support':
