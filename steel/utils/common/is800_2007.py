@@ -543,57 +543,14 @@ class IS800_2007(object):
 
         return math.sqrt(fy/fcrb)
     @staticmethod
-    def cl_8_3_1_EffLen_Simply_Supported(Torsional, Warping, length, depth, load) :
-        """ Calculate the Effective Length for Simply Supported Beams as per Table 15 Cl 8.3.1
-
-        Args:
-            Torsional Restraint: Type of Restraint (string)
-            Warping Restraint: Type of Restraint (string)
-            depth(d): depth of the element in mm (float or int)
-            length(l): length of span in mm (float or int)
-            f_y: yield stress of the section material in MPa (float or int)
-            load: Type of load in member ('Normal') ('Destabilizing')
-
-
-        Returns:
-            Effective length (float)
-
-        Reference: Table 15 Cl 8.3.1, IS 800:2007
-
-        """
-        if load == KEY_DISP_LOAD1:
-            if Torsional == Torsion_Restraint1:
-                if Warping == Warping_Restraint1 :
-                    length = 0.80 * length
-                elif Warping == Warping_Restraint2 :
-                    length = 0.75 * length
-                # elif Warping ==Warping_Restraint1 :
-                #     length = 0.80 * length
-                elif Warping == Warping_Restraint4 :
-                    length = 0.85 * length
-                elif Warping == Warping_Restraint5 :
-                    length = 1.00 * length
-            elif Torsional == Torsion_Restraint2 and Warping == Warping_Restraint5 :
-                length = length + 2 * depth
-            elif Torsional == Torsion_Restraint3 and Warping == Warping_Restraint5 :
-                length = 1.2 * length + 2 * depth
-        elif load == KEY_DISP_LOAD2:
-            if Torsional == Torsion_Restraint1:
-                if Warping == Warping_Restraint1 :
-                    length = 0.85 * length
-                if Warping == Warping_Restraint2 :
-                    length = 0.9 * length
-                if Warping == Warping_Restraint1 :
-                    length = 0.95 * length
-                if Warping == Warping_Restraint4 :
-                    length = 1.00 * length
-                if Warping == Warping_Restraint5 :
-                    length = 1.20 * length
-            elif Torsional == Torsion_Restraint2 and Warping == Warping_Restraint5 :
-                length = 1.2 * length + 2 * depth
-            elif Torsional == Torsion_Restraint3 and Warping == Warping_Restraint5 :
-                length = 1.4 * length + 2 * depth
-        return length
+    def simple_beam_ltb_length(row, length, depth, *, loading):
+        """15.3.1, Table 15 rows i-vii. Effective length in mm."""
+        _positive(length, depth)
+        if row not in range(1, 8):
+            raise ValueError("Table 15 row must be 1 to 7")
+        factors = {"normal": (.70,.75,.80,.85,1,1,1.2),
+                   "destabilizing": (.85,.90,.95,1,1.2,1.2,1.4)}[loading]
+        return factors[row-1]*length + (2*depth if row >= 6 else 0)
 
     @staticmethod
     def cl_8_3_3_EffLen_Cantilever(Support, Top, length, load) -> float:
