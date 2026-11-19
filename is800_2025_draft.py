@@ -238,6 +238,41 @@ class IS800_2025_Draft:
                 * math.sqrt(1 + (length_over_ry/hf_over_tf)**2/20))
 
     @staticmethod
+    def slip_resistance(fub, area_net, interfaces, mu, *, hole, load_level):
+        """17.4.3. Return design force in N, Kh and gamma_mf."""
+        _positive(fub, area_net, interfaces, mu)
+        if int(interfaces) != interfaces or mu > .55:
+            raise ValueError("Supply whole interface count and mu <= 0.55")
+        kh = {"standard": 1, "oversize": .85, "short-slot": .85,
+              "long-perpendicular": .85, "long-parallel": .70}[hole]
+        gamma = {"service": 1.10, "ultimate": 1.25}[load_level]
+        return mu*interfaces*kh*.70*fub*area_net/gamma, kh, gamma
+
+    @staticmethod
+    def min_weld_size(t1, t2, *, first_run=False, preheated=False):
+        """17.5.2.3, Table 21. Required size in mm for stated application."""
+        _positive(t1, t2)
+        thick, thin = max(t1,t2), min(t1,t2)
+        if thick > 50 or thin < 3:
+            raise NotImplementedError("Requires a separately qualified weld detail")
+        size = 3 if thick <= 10 else 5 if thick <= 20 else 6 if thick <= 32 else (8 if first_run else 10)
+        if size > thin and not preheated:
+            raise ValueError("Thin-part exception requires preheating the thicker part")
+        return min(size, thin)
+
+    @staticmethod
+    def weld_throat(size, angle):
+        """17.5.3.1-2, Table 22. Check actual throat against 3 mm minimum."""
+        _positive(size)
+        for lo, hi, k in ((60,90,.70),(91,100,.65),(101,106,.60),(107,113,.55),(114,120,.50)):
+            if lo <= angle <= hi:
+                throat = k*size
+                if throat < 3:
+                    raise ValueError("Actual effective throat is below 3 mm")
+                return throat
+        raise ValueError("Fusion angle outside a printed Table 22 interval")
+
+    @staticmethod
     def tension_yield(ag, fy):
         """13.2, gross section yielding strength (N)."""
         _positive(ag, fy)
@@ -354,6 +389,63 @@ class IS800_2025_Draft:
         return ratio <= sv and d/tw <= buckling
 
     @staticmethod
+    def hole_dimensions(d, hole):
+        """17.2.1 Table 19. Returns (width, length) mm for a circular hole or slot."""
+        _positive(d)
+        if 12 <= d <= 14:
+            clear = (1,3,4)
+        elif 16 <= d <= 22:
+            clear = (2,4,6)
+        elif d == 24:
+            clear = (2,6,8)
+        elif d > 24:
+            clear = (3,8,10)
+        else:
+            raise ValueError("Diameter outside the printed Table 19 rows")
+        normal, oversize, short = clear
+        return {"standard": (d+normal,d+normal), "oversize": (d+oversize,d+oversize),
+                "short-slot": (d+normal,d+short), "long-slot": (d+normal,3.5*d)}[hole]
+
+    @staticmethod
+    def bolt_bearing(fu, fub, thickness, d, d0, end, pitch, *, hole="standard"):
+        """17.3.4. N. For slots use loading normal to slot and the hole width."""
+        _positive(fu, fub, thickness, d, d0, end, pitch)
+        kb = min(end/(3*d0), pitch/(3*d0)-.25, fub/fu, 1)
+        if kb <= 0:
+            raise ValueError("Invalid bearing geometry")
+        factor = {"standard": 1, "oversize": .7, "short-slot": .7, "long-slot": .5}[hole]
+        return 2.5*kb*d*thickness*fu*factor/1.25
+
+    @staticmethod
+    def bolt_grip_factor(d, grip, *, long_joint_factor=1):
+        """17.3.3.2. Return grip factor; caller checks long joint separately."""
+        _positive(d, grip)
+        if grip > 8*d or not .75 <= long_joint_factor <= 1:
+            raise ValueError("Check grip length and long joint factor")
+        if grip <= 5*d:
+            return 1.
+        return min(8/(3+grip/d), long_joint_factor)
+
+    @staticmethod
+    def groove_throat(t1, t2, *, common_penetration=None):
+        """17.5.3.3. For incomplete penetration give common weld metal excluding reinforcement."""
+        _positive(t1, t2)
+        thin = min(t1, t2)
+        if common_penetration is None:
+            return thin
+        if not 0 < common_penetration <= thin:
+            raise ValueError("Check common penetration")
+        return common_penetration
+
+    @staticmethod
+    def fillet_effective_length(size, actual_length):
+        """17.5.4.1, ordinary continuous fillet with end allowances, mm."""
+        _positive(size, actual_length)
+        if actual_length < 4*size:
+            raise ValueError("Actual weld length below four weld sizes")
+        return actual_length-2*size
+
+    @staticmethod
     def column_table(curve, kl_over_r, fy):
         """Tables 8 and 9. Returns (chi, fcd in MPa) for exact printed grid points."""
         rows = _COLUMN_TABLES[curve]
@@ -420,6 +512,73 @@ class IS800_2025_Draft:
         return length*factors[loading][support_row-1][top_row-1]
 
     @staticmethod
+    def weld_long_joint(length, throat):
+        """17.5.7.3. Splice/end connection loaded along its length, where applicable."""
+        _positive(length, throat)
+        beta = min(1, 1.2-.2*length/(150*throat))
+        if beta <= 0:
+            raise ValueError("Printed relation gives a nonpositive factor; review connection")
+        return beta
+
+    @staticmethod
+    def bolt_shear(fub, anb, asb, nn, ns=0):
+        """17.3.3, base design shear resistance before applicable reductions (N)."""
+        _positive(fub, anb, asb)
+        if min(nn,ns) < 0 or nn+ns < 1 or int(nn) != nn or int(ns) != ns:
+            raise ValueError("Check shear plane counts")
+        return fub*(nn*anb+ns*asb)/(math.sqrt(3)*1.25)
+
+    @staticmethod
+    def bolt_tension(fub, fyb, area_net, area_shank):
+        """17.3.5 / 17.4.5. Design resistance in N with Table 5 factors."""
+        _positive(fub, fyb, area_net, area_shank)
+        return min(.9*fub*area_net/1.25, fyb*area_shank/1.1)
+
+    @staticmethod
+    def prying_force(te, lv, proof_stress, width_per_pair, t, fy, end, *, pretensioned):
+        """17.4.7. Additional tensile force per bolt (N), for specified end plate."""
+        _positive(lv, proof_stress, width_per_pair, t, fy, end)
+        if te < 0 or not isinstance(pretensioned, bool):
+            raise ValueError("Supply tensile force magnitude and boolean pretensioned")
+        beta = 1 if pretensioned else 2
+        le = min(end, 1.1*t*math.sqrt(beta*proof_stress/fy))
+        return max(0, lv/(2*le)*(te-beta*1.5*proof_stress*width_per_pair*t**4/(27*le*lv**2)))
+
+    @staticmethod
+    def min_edge(hole_diameter, *, edge):
+        """17.2.4.2. Minimum distance (mm); apply measurement rules of 17.2.4.1."""
+        _positive(hole_diameter)
+        factor = {"sheared":1.7, "hand-flame":1.7, "rolled":1.5,
+                  "machine-flame":1.5, "sawn":1.5, "planed":1.5}[edge]
+        return factor*hole_diameter
+
+    @staticmethod
+    def max_edge(thinner_outer_t, outer_fy, *, corrosive=False, thinnest_connected_t=None):
+        """17.2.4.3. Unstiffened outer edge. Excludes back-to-back tension-member exception."""
+        _positive(thinner_outer_t, outer_fy)
+        limit = 12*thinner_outer_t*math.sqrt(250/outer_fy)
+        if corrosive:
+            _positive(thinnest_connected_t)
+            limit = min(limit, 40+4*thinnest_connected_t)
+        return limit
+
+    @staticmethod
+    def max_pitch(t, *, member, diameter=None):
+        """17.2.3.2. Butting row applies within 1.5 member widths of butting faces."""
+        _positive(t)
+        if member == "butting":
+            _positive(diameter)
+            return min(4.5*diameter, 12*t, 200)
+        return min({"tension":16, "compression":12}[member]*t, 200)
+
+    @staticmethod
+    def weld_design_stress(fu_weld, fu_parent, *, fabrication):
+        """17.5.7.1-2. Use weakest parent metal and weld ultimate strength (MPa)."""
+        _positive(fu_weld, fu_parent)
+        gamma = {"shop":1.25,"site":1.50}[fabrication]
+        return min(fu_weld,fu_parent)/(math.sqrt(3)*gamma)
+
+    @staticmethod
     def ltb_elastic_moment(E, G, iy, it, iw, length):
         """15.2.2.1 simply supported prismatic symmetric section, Mcr in N mm."""
         _positive(E, G, iy, it, length)
@@ -448,6 +607,16 @@ class IS800_2025_Draft:
         _positive(width, length_between_inflections)
         divisor = {"outstand":20, "internal":10}[element]
         return min(width,length_between_inflections/divisor)
+
+    @staticmethod
+    def bolt_long_joint(d, length, bolt_count, *, uniform_transfer=False):
+        """17.3.3.1 & 17.4.3.1. Shear capacity factor."""
+        _positive(d, bolt_count)
+        if length < 0 or int(bolt_count) != bolt_count:
+            raise ValueError("Invalid joint length or bolt count")
+        if uniform_transfer or bolt_count <= 2 or length <= 15*d:
+            return 1.
+        return max(.75, 1.075-.005*length/d)
 
     @staticmethod
     def web_shear_buckling_required(d, tw, fyw, *, kv=None):
@@ -482,6 +651,43 @@ class IS800_2025_Draft:
         return v > .6*vd
 
     @staticmethod
+    def weld_max_throat(t1, t2, *, special=False):
+        """17.5.3.1. Upper throat limit in mm."""
+        _positive(t1, t2)
+        return min(t1,t2)*(1 if special else .7)
+
+    @staticmethod
+    def bolt_interaction(v, vd, t, td):
+        """17.3.6 or 17.4.6. Dimensionless utilisation, limit 1.0."""
+        _positive(vd, td)
+        return (v/vd)**2 + (t/td)**2
+
+    @staticmethod
+    def packing_factor(t):
+        """17.3.3.3. Thickness of thicker packing in mm."""
+        if not math.isfinite(t) or t < 0 or t >= 80:
+            raise ValueError("Packing outside positive-factor domain")
+        return 1-.0125*t if t > 6 else 1
+
+    @staticmethod
+    def min_spacing(d):
+        """17.2.2. Centre-to-centre distance in mm."""
+        _positive(d)
+        return 2.5*d
+
+    @staticmethod
+    def max_spacing(t):
+        """17.2.3.1. Thinner plate thickness and maximum spacing in mm."""
+        _positive(t)
+        return min(32*t,300)
+
+    @staticmethod
+    def bearing_bolt_capacity(shear_resistance, bearing_resistance):
+        """17.3.2. Use design resistances after applicable reductions, in N."""
+        _positive(shear_resistance, bearing_resistance)
+        return min(shear_resistance,bearing_resistance)
+
+    @staticmethod
     def compression_stress(chi, fy):
         """14.1.2. Design compressive stress from governing reduction factor."""
         _positive(chi, fy)
@@ -494,6 +700,8 @@ class IS800_2025_Draft:
         if chi_lt > 1:
             raise ValueError("chi_LT exceeds unity")
         return chi_lt*fy/1.1
+
+
 
     @staticmethod
     def specialty_fy(grade, thickness):
