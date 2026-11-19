@@ -449,19 +449,12 @@ class IS800_2007(object):
         return True
 
     @staticmethod
-    def cl_8_2_1_2_design_bending_strength(section_class, Zp, Ze, fy, gamma_mo, support):
-        beta_b = 1.0 if section_class == KEY_Plastic or KEY_Compact else Ze/Zp
-        Md = beta_b * Zp * fy / gamma_mo
-        if support == KEY_DISP_SUPPORT1 :
-            if Md < 1.2 * Ze * fy / gamma_mo:
-                return Md
-            else:
-                return 1.2 * Ze * fy / gamma_mo
-        elif support == KEY_DISP_SUPPORT2 :
-            if Md < 1.5 * Ze * fy / gamma_mo:
-                return Md
-            else:
-                return 1.5 * Ze * fy / gamma_mo
+    def low_shear_moment(section_class, zp, ze, fy, support):
+        """15.2.1.2. Laterally supported beam, low shear and eligible web. N mm."""
+        _positive(zp, ze, fy)
+        modulus = {"Plastic": zp, "Compact": zp, "Semi-Compact": ze}[section_class]
+        cap = {"simply-supported": 1.2, "cantilever": 1.5}[support]
+        return min(modulus, cap*ze)*fy/1.10
 
 
     @staticmethod
