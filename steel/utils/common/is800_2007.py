@@ -513,11 +513,7 @@ class IS800_2007(object):
             raise ValueError("Non-real reduction factor; check inputs and draft equation")
         return phi, min(1, fm/(phi+math.sqrt(root)))
 
-    @staticmethod
-    def cl_8_2_2_Unsupported_beam_bending_phi_lt(alpha_lt, lambda_lt):
-        a = 0.5 * ( 1 + alpha_lt * ( lambda_lt - 0.2) + lambda_lt ** 2)
-        # print(alpha_lt, lambda_lt, a)
-        return a
+    # Draft 15.2.2: Replace legacy phi expression. See Tables 13 and 14.
 
     @staticmethod
     def cl_8_2_2_Unsupported_beam_bending_non_slenderness( E, meu,Iy, It, Iw, Llt,beta_b, Zp, hf,ry, tf):
