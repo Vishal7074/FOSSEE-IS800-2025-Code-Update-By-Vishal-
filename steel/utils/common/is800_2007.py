@@ -824,16 +824,14 @@ class IS800_2007(object):
 
     # cl. 10.2.2 Minimum Spacing
     @staticmethod
+    def min_spacing(d):
+        """17.2.2. Centre-to-centre distance in mm."""
+        _positive(d)
+        return 2.5*d
+
+    @staticmethod
     def cl_10_2_2_min_spacing(d):
-        """Calculate minimum distance between centre of fasteners
-        Args:
-             d - Nominal diameter of fastener in mm (float)
-        Returns:
-            Minimum distance between centre of fasteners in mm (float)
-        Note:
-            Reference:
-            IS 800:2007, cl. 10.2.2
-        """
+        """Draft 17.2.2. Retained project calculation and units."""
         return 2.5 * d
 
     # cl. 10.2.3.1 Maximum Spacing
