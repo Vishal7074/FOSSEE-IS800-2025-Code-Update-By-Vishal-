@@ -111,52 +111,9 @@ class IS800_2007(object):
 
     @staticmethod
     def Table2_iii(depth, thickness, f_y, classification_type='Neutral axis at mid-depth'):
-        """ Calculate the limiting width to thickness ratio as per Table 2 for;
-                sr. no iii) Web of an I, H or box section for axial compression
-
-        Args:
-            depth: width of the element in mm (float or int)
-            thickness: thickness of the element in mm (float or int)
-            f_y: yield stress of the section material in MPa (float or int)
-            classification_type: Type of classification required (Neutral axis at mid-depth, Generaly, Axial Compression) (string)
-
-        Returns:
-            The class of the section as Plastic, Compact, Semi-compact or Slender on account of the web
-
-        Reference: Table 2 and Cl.3.7.2, IS 800:2007
-
-        """
-        epsilon = math.sqrt(250 / f_y)
-
-        ratio = depth / thickness
-
-        # print(f" web_class \n" 
-        #       f" depth {depth} \n"
-        #       f" thickness {thickness} \n"
-        #       f" epsilon {epsilon} \n"
-        #        f" classification_type {classification_type}\n"
-        #       )
-
-        if classification_type == 'Neutral axis at mid-depth':
-            if ratio < (84 * epsilon):
-                section_class = KEY_Plastic
-            elif ratio < (105 * epsilon):
-                section_class = KEY_Compact
-            elif ratio < (126 * epsilon):
-                section_class = KEY_SemiCompact
-            else:
-                section_class = 'Slender'
-
-        elif classification_type == 'Generally':
-            pass
-        elif classification_type == 'Axial compression':
-            if ratio > (42 * epsilon):
-                section_class = 'Slender'
-            else:
-                section_class = 'Semi-Compact'
-        # print(f" section_class {section_class}")
-
-        return section_class
+        """Table 2(ii); general stress requires Table2_web_OfI_H_box_section."""
+        loading = {'Neutral axis at mid-depth': 'mid-depth', 'Axial compression': 'axial'}[classification_type]
+        return IS800_2025_Draft.web_class(depth, thickness, f_y, loading=loading)
 
     @staticmethod
     def Table2_iv(depth, thickness_web, f_y):
