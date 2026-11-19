@@ -249,13 +249,15 @@ class IS800_2007(object):
 
     # cl.6.3.1 Plates
     @staticmethod
+    def plate_rupture(an, fu):
+        """13.3.1, net section rupture (N). Supply effective net area."""
+        _positive(an, fu)
+        return .9*an*fu/1.25
+
+    @staticmethod
     def cl_6_3_1_tension_rupture_strength(A_n,f_u):
-        """Calcualte the tension rupture capacity of plate as per clause 6.3.1
-        :param A_n: net effective area of member
-        :param f_u: ultimate stress of the material
-        :return: design strength in tension rupture
-        """
-        gamma_m1 = IS800_2007.cl_5_4_1_Table_5["gamma_m1"]['ultimate_stress']
+        """Draft 13.3.1. Retained project calculation and units."""
+        gamma_m1 = IS800_2025_Draft.material_factors["gamma_m1"]['ultimate_stress']
         T_dn = 0.9*A_n*f_u/gamma_m1
         return T_dn
     #   6.4 Design Strength Due to Block Shear
