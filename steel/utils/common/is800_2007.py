@@ -947,23 +947,10 @@ class IS800_2007(object):
         return 2.5*kb*d*thickness*fu*factor/1.25
 
     @staticmethod
-    def cl_10_3_5_bearing_bolt_tension_resistance(f_ub, f_yb, A_sb, A_n, safety_factor_parameter=KEY_DP_FAB_FIELD):
-        """Calculate design tensile strength of bearing bolt
-        Args:
-            f_ub - Ultimate tensile strength of the bolt in MPa (float)
-            f_yb - Yield strength of the bolt in MPa (float)
-            A_sb - Shank area of bolt in sq. mm  (float)
-            A_n - Net tensile stress area of the bolts as per IS 1367 in sq. mm  (float)
-        return:
-            T_db - Design tensile strength of bearing bolt in N (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.3.5
-        """
-        gamma_mb = IS800_2007.cl_5_4_1_Table_5['gamma_mb'][safety_factor_parameter]
-        gamma_m0 = IS800_2007.cl_5_4_1_Table_5['gamma_m0']['yielding']
-        T_nb = min(0.90 * f_ub * A_n, f_yb * A_sb * gamma_mb / gamma_m0)
-        return T_nb / gamma_mb
+    def bolt_tension(fub, fyb, area_net, area_shank):
+        """17.3.5 / 17.4.5. Design resistance in N with Table 5 factors."""
+        _positive(fub, fyb, area_net, area_shank)
+        return min(.9*fub*area_net/1.25, fyb*area_shank/1.1)
 
         # cl. 10.3.6 Bolt subjected to combined shear and tension of bearing bolts
 
