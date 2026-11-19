@@ -151,43 +151,9 @@ class IS800_2007(object):
 
     @staticmethod
     def Table2_x(outer_diameter, tube_thickness, f_y, load_type='axial compression'):
-        """ Calculate the limiting width to thickness ratio as per Table 2 for;
-                sr. no x) Circular hollow tube
-
-        Args:
-            outer_diameter: outer diameter of the tube in mm (float or int)
-            tube_thickness: thickness of the tube in mm (float or int)
-            f_y: yield stress of the section material in MPa (float or int)
-            load_type: Type of loading (moment, axial compression) (string)
-
-        Returns:
-            The class of the section as Plastic, Compact, Semi-compact or Slender
-
-        Reference: Table 2 and Cl.3.7.2, IS 800:2007
-
-        """
-        epsilon = math.sqrt(250 / f_y)
-
-        ratio = outer_diameter / tube_thickness
-
-        print(f"outer_diameter{outer_diameter},tube_thickness{tube_thickness}")
-
-        if load_type == 'axial compression':
-            if ratio > (88 * epsilon**2):
-                section_class = 'Slender'
-            else:
-                section_class = 'Semi-Compact'
-        else:
-            if ratio <= (42 * epsilon**2):
-                section_class = 'Plastic'
-            elif (ratio > (42 * epsilon**2)) and (ratio <= (52 * epsilon**2)):
-                section_class = 'Compact'
-            elif ratio <= (146 * epsilon**2):
-                section_class = 'Semi-Compact'
-            else:
-                section_class = 'Slender'
-
-        return section_class
+        """Table 2(vi). Return the circular tube element class."""
+        loading = {'axial compression':'axial','moment':'moment'}[load_type.lower()]
+        return IS800_2025_Draft.tube_class(outer_diameter,tube_thickness,f_y,loading=loading)
     
 
     # ==========================================================================
