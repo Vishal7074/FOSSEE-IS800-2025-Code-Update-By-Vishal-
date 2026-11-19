@@ -702,75 +702,7 @@ class IS800_2007(object):
         return  M_fr
     # Draft 15.4.2.2(b): Correct anchorage, units, inclination, effective width and cap.
 
-    @staticmethod
-    def cl_8_4_2_2_TensionField_unequal_Isection(
-    c, d, tw, fyw,
-    bf_top, tf_top, bf_bot, tf_bot,
-    Nf, gamma_m0, A_v, tau_b):
-        """
-        Tension‐field method per IS 800:2007 Cl. 8.4.2.2 for unequal flanges.
-
-        Parameters:
-        c       : float : panel width (mm)
-        d       : float : web depth (mm)
-        tw      : float : web thickness (mm)
-        fyw     : float : web yield stress (N/mm²)
-        bf_top  : float : top flange width (mm)
-        tf_top  : float : top flange thickness (mm)
-        bf_bot  : float : bottom flange width (mm)
-        tf_bot  : float : bottom flange thickness (mm)
-        Nf      : float : axial force in each flange (kN → N·mm units consistent)
-        gamma_m0: float : partial safety factor
-        A_v     : float : gross web area = d*tw (mm²)
-        tau_b   : float : post‐buckling shear stress of web (N/mm²)
-        V_p     : float : plastic shear strength V_np (kN)
-
-        Returns:
-        tuple: (phi, Mfr_top, Mfr_bot, s_top, s_bot, w_tf, psi, fv, V_tf)
-        """
-
-        # 1) Tension‐field angle φ
-        if c == 0:
-            phi = 90.0
-        else:
-            phi = math.degrees(math.atan((d / c) / 1.5))
-
-        # 2) Reduced plastic moment of each flange
-        def Mfr(bf, tf):
-            Mp = 0.25 * bf * tf**2 * fyw
-            ratio = Nf / (bf * tf * fyw / gamma_m0)
-            if ratio >= 1:
-                return 0
-            else:
-                return Mp * (1 - ratio**2)
-
-        Mfr_t = Mfr(bf_top, tf_top)
-        Mfr_b = Mfr(bf_bot, tf_bot)
-
-        # 3) s‐values for each flange, limited to c
-
-        sinφ = math.sin(math.radians(phi))
-        if sinφ == 0:
-            s_t= 0
-            s_b= 0
-        else:
-            s_t = min(2 * math.sqrt(Mfr_t / (fyw * tw)) / sinφ, c)
-            s_b = min(2 * math.sqrt(Mfr_b / (fyw * tw)) / sinφ, c)
-
-
-        # 4) Width of the tension field w_tf
-        w_tf = d * math.cos(math.radians(phi)) - (c - s_t - s_b) * sinφ
-
-        # 5) Field yield strength f_v
-        psi = 1.5 * tau_b * math.sin(2 * math.radians(phi))
-        fv  = math.sqrt(fyw**2 - 3 * tau_b**2 + psi**2) - psi
-
-        # 6) Nominal shear resistance V_tf (kN)
-        V_tf = (A_v * tau_b + 0.9 * w_tf * tw * fv * sinφ)
-        V_p = d * tw * fyw / (math.sqrt(3) * gamma_m0)  # Plastic shear strength
-        V_tf = min(V_tf, V_p)
-
-        return phi, Mfr_t, Mfr_b, s_t, s_b, w_tf, psi, fv, V_tf
+    # Draft 15.4.2.2(b): Use separate flange strengths/forces and distinguish nominal Vp.
 
     @staticmethod
     def cl_8_5_1_EndPanel(c, d, tw, fyw, bf, tf, fyf, Nf, gamma_mo, A_v, tau_b, V_p):
