@@ -122,52 +122,23 @@ class IS800_2007(object):
                 depth/thickness_web]
 
     @staticmethod
-    def Table2_vi(width, depth, thickness, f_y, force_type = "Axial Compression"):
-        """ Calculate the limiting width to thickness ratio as per Table 2 for;
-                sr. no i) Members subjected to Axial Compression
-                sr. no ii)Members subjected to Compression due to bending
+    def angle_class(b, d, thickness, fy, *, case):
+        """Table 2(iii-v). For the contacting angle leg only d/t governs."""
+        _positive(b, d, thickness, fy)
+        scale = math.sqrt(250/fy)
+        if case == "separated-axial":
+            ok = max(b, d)/thickness <= 14.5*scale and (b+d)/thickness <= 22.3*scale
+            return "Semi-Compact" if ok else "Slender"
+        width = {"bending": max(b, d), "contact-leg": d}[case]
+        return _classify(width/thickness, (8.7, 9.7, 14.5), scale)
 
-        Args:
-            width(b): width of the element in mm (float or int)
-            depth(d): depth of the element in mm (float or int)
-            thickness(t): thickness of the element in mm (float or int)
-            f_y: yield stress of the section material in MPa (float or int)
-            force_type: Type of failure in member ('Axial') ('Compression')
-            section_type: Type of section ('Angle') (string)
-
-        Returns:
-            A list of values with;
-            1- The class of the section as Semi-compact or Slender on account of the 
-             b/t, d/t, (b+d)/t Ratio
-
-            ['Section Class', 'Ratio']
-
-        Reference: Table 2 and Cl.3.7.2, IS 800:2007
-
-        """
-        epsilon = math.sqrt(250 / int(f_y))
-
-        b_t = width / thickness
-        d_t = depth / thickness
-        bd_t = (width + depth) / thickness
-
-
-        if force_type == 'Axial Compression':
-            if b_t <= (15.7 * epsilon) and d_t<= (15.7 * epsilon) and  bd_t<= (25 * epsilon):
-                section_class = KEY_SemiCompact
-            else:
-                section_class = 'Slender'
-        else:
-            if b_t <= (9.4 * epsilon) and d_t<= (9.4 * epsilon):
-                section_class = KEY_Plastic
-            elif b_t <= (10.5 * epsilon) and d_t<= (10.5 * epsilon):
-                section_class = KEY_Compact
-            elif b_t <= (15.7 * epsilon) and d_t<= (15.7 * epsilon):
-                section_class = KEY_SemiCompact
-            else:
-                section_class = 'Slender'
-
-        return [section_class, b_t,d_t, bd_t ]
+    @staticmethod
+    def Table2_vi(width, depth, thickness, f_y, force_type="Axial Compression"):
+        """Table 2(iii-iv). Check both legs and, for axial load, the sum."""
+        case = {'Axial Compression':'separated-axial', 'Bending':'bending',
+                'Compression due to bending':'bending'}[force_type]
+        grade = IS800_2025_Draft.angle_class(width,depth,thickness,f_y,case=case)
+        return [grade, width/thickness, depth/thickness, (width+depth)/thickness]
 
     @staticmethod
     def Table2_vii(width, depth, thickness, f_y, force_type = "Axial Compression"):
