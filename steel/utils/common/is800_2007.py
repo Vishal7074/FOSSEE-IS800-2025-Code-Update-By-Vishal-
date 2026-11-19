@@ -955,18 +955,14 @@ class IS800_2007(object):
         # cl. 10.3.6 Bolt subjected to combined shear and tension of bearing bolts
 
     @staticmethod
+    def bolt_interaction(v, vd, t, td):
+        """17.3.6 or 17.4.6. Dimensionless utilisation, limit 1.0."""
+        _positive(vd, td)
+        return (v/vd)**2 + (t/td)**2
+
+    @staticmethod
     def cl_10_3_6_bearing_bolt_combined_shear_and_tension(V_sb, V_db, T_b, T_db):
-        """Check for bolt subjected to combined shear and tension
-        Args:
-            V_sb - factored shear force acting on the bolt,
-            V_db - design shear capacity,
-            T_b - factored tensile force acting on the bolt,
-            T_db - design tension capacity.
-        return: combined shear and friction value
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.3.6
-        """
+        """Draft 17.3.6. Retained project calculation and units."""
         return (V_sb / V_db) ** 2 + (T_b / T_db) ** 2
 
     # -------------------------------------------------------------
