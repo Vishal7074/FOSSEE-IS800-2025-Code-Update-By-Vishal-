@@ -779,16 +779,7 @@ class IS800_2007(object):
 
     # cl. 10.2.1 Clearances for Holes for Fasteners
 
-    @staticmethod
-    def cl_8_7_1_3_stiff_bearing_length(shear_force, web_thickness, flange_thickness, root_radius, fy):
-        #     This function returns the stiff bearing length, b1 for web local yielding and web crippling check
-        #     Minimum value of b1 is not defined in IS 800, reference has been made to AISC for such cases (CL. J10-2)
-        gamma_m0 = IS800_2007.cl_5_4_1_Table_5['gamma_m0']['yielding']
-        bearing_length = round((float(shear_force) * 1000) * gamma_m0 / web_thickness / fy, 3)
-        b1_req = bearing_length - (flange_thickness + root_radius)
-        k = flange_thickness + root_radius
-        b1 = max(b1_req, k)
-        return b1
+    # Draft 15.7.1.3: Legacy inverse bearing-length estimate depends on assumed geometry. Draft 15.7.1.3 requires actual 45-degree dispersion; no universal scalar replacement.
 
     # ==========================================================================
     """    SECTION  9     MEMBER SUBJECTED TO COMBINED FORCES   """
