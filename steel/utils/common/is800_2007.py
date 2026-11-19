@@ -1009,32 +1009,16 @@ class IS800_2007(object):
 
     # cl. 10.5.2.3 Minimum Size of First Run or of a Single Run Fillet Weld
     @staticmethod
-    def cl_10_5_2_3_min_weld_size(part1_thickness, part2_thickness):
-        """Calculate minimum size of fillet weld as per Table 21 of IS 800:2007
-        Args:
-            part1_thickness - Thickness of either plate element being welded in mm (float)
-            part2_thickness - Thickness of other plate element being welded in mm (float)
-        Returns:
-            min_weld_size - Minimum size of first run or of a single run fillet weld in mm (float)
-        Note:
-            Reference:
-            IS 800, Table 21 (Cl 10.5.2.3) : Minimum Size of First Run or of a Single Run Fillet Weld
-        """
-        thicker_part_thickness = max(part1_thickness, part2_thickness)
-        thinner_part_thickness = min(part1_thickness, part2_thickness)
-
-        if thicker_part_thickness <= 10.0:
-            min_weld_size = 3
-        elif thicker_part_thickness <= 20.0:
-            min_weld_size = 5
-        elif thicker_part_thickness <= 32.0:
-            min_weld_size = 6
-        else:  # thicker_part_thickness <= 50.0:
-            min_weld_size = 10
-        # TODO else:
-        if min_weld_size > thinner_part_thickness:
-            min_weld_size = thinner_part_thickness
-        return min_weld_size
+    def min_weld_size(t1, t2, *, first_run=False, preheated=False):
+        """17.5.2.3, Table 21. Required size in mm for stated application."""
+        _positive(t1, t2)
+        thick, thin = max(t1,t2), min(t1,t2)
+        if thick > 50 or thin < 3:
+            raise NotImplementedError("Requires a separately qualified weld detail")
+        size = 3 if thick <= 10 else 5 if thick <= 20 else 6 if thick <= 32 else (8 if first_run else 10)
+        if size > thin and not preheated:
+            raise ValueError("Thin-part exception requires preheating the thicker part")
+        return min(size, thin)
 
     @staticmethod
     def cl_10_5_3_1_max_weld_throat_thickness(part1_thickness, part2_thickness, special_circumstance=False):
