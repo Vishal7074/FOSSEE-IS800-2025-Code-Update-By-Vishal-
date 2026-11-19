@@ -2443,3 +2443,30 @@ class IS800_2007(object):
     # ==========================================================================
     """     ------------------END------------------     """
     
+
+# April 2025 draft entry point for projects already importing this module.
+# Edition selection is explicit because several draft calls need new inputs.
+from is800_2025_draft import IS800_2025_Draft
+
+
+class IS800_2025_Project(IS800_2025_Draft):
+    """Project-facing draft class with compatible return types for selected callers."""
+
+    @staticmethod
+    def Table2_i(width, thickness, f_y, section_type='Rolled'):
+        """Table 2(i), uniform compression. Both fabrication types share the limits."""
+        if section_type not in ('Rolled', 'Welded'):
+            raise ValueError("Expected Rolled or Welded")
+        result = IS800_2025_Draft.outstand_class(width, thickness, f_y)
+        return [result, width / thickness]
+
+    @staticmethod
+    def Table2_x(outer_diameter, tube_thickness, f_y, load_type='axial compression'):
+        """Table 2(vi). Preserve the old class-string output for a circular tube."""
+        loading = {'axial compression': 'axial', 'moment': 'moment'}[load_type.lower()]
+        return IS800_2025_Draft.tube_class(outer_diameter, tube_thickness, f_y, loading=loading)
+
+    @staticmethod
+    def cl_3_8_max_slenderness_ratio(Type=1):
+        """Legacy call name for the six draft Table 3 member categories."""
+        return IS800_2025_Draft.maximum_slenderness(Type)
