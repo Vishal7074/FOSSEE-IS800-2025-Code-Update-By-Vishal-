@@ -971,43 +971,15 @@ class IS800_2007(object):
 
     # cl. 10.4.3 Slip Resistance
     @staticmethod
-    def cl_10_4_3_bolt_slip_resistance(f_ub, A_nb, n_e, mu_f, bolt_hole_type='Standard', slip_resistance='ultimate_load'):
-        # TODO : Ensure default slip_resistance = 'service_load' or 'ultimate_load'
-        """Calculate design shear strength of friction grip bolt as governed by slip
-        Args:
-            f_ub - Ultimate tensile strength of the bolt in MPa (float)
-            A_nb - Net area of the bolt at threads in sq. mm  (float)
-            n_e - Number of  effective interfaces offering  frictional resistance to slip (int)
-            mu_f - coefficient of friction (slip factor) as specified in Table 20
-            bolt_hole_type - Either 'Standard' or 'Over-sized' or 'short_slot' or 'long_slot' (str)
-            slip_resistance - whether slip resistance is required at service load or ultimate load
-                              Either 'service_load' or 'ultimate_load' (str)
-        return:
-            V_dsf - Design shear strength of friction grip bolt as governed by slip in N (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.4.3
-            AMENDMENT NO. 1 (JANUARY 2012) to IS 800:2007
-        """
-        f_0 = 0.70 * f_ub
-        F_0 = A_nb * f_0
-        if slip_resistance == 'service_load':
-            gamma_mf = 1.10
-        else:
-            # TODO : slip _resistance for 'ultimate_load' is given in else
-            gamma_mf = 1.25
-        if bolt_hole_type == 'Standard':
-            K_h = 1.0
-        elif bolt_hole_type == 'Over-sized' or bolt_hole_type == 'short_slot' or bolt_hole_type == 'long_slot':
-            K_h = 0.85
-        else:
-            # TODO : long_slot bolt loaded parallel to slot is given in else
-            K_h = 0.7
-        if mu_f >= 0.55:
-            mu_f = 0.55
-        V_nsf = mu_f * n_e * K_h * F_0
-        V_dsf = V_nsf / gamma_mf
-        return V_dsf, K_h, gamma_mf
+    def slip_resistance(fub, area_net, interfaces, mu, *, hole, load_level):
+        """17.4.3. Return design force in N, Kh and gamma_mf."""
+        _positive(fub, area_net, interfaces, mu)
+        if int(interfaces) != interfaces or mu > .55:
+            raise ValueError("Supply whole interface count and mu <= 0.55")
+        kh = {"standard": 1, "oversize": .85, "short-slot": .85,
+              "long-perpendicular": .85, "long-parallel": .70}[hole]
+        gamma = {"service": 1.10, "ultimate": 1.25}[load_level]
+        return mu*interfaces*kh*.70*fub*area_net/gamma, kh, gamma
 
     # Table 20 Typical Average Values for Coefficient of Friction, mu_f (list)
     cl_10_4_3_Table_20 = [0.20, 0.50, 0.10, 0.25, 0.30, 0.52, 0.30, 0.30, 0.50, 0.33, 0.48, 0.1]
