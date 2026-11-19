@@ -516,16 +516,20 @@ class IS800_2007(object):
     # Draft 15.2.2: Replace legacy phi expression. See Tables 13 and 14.
 
     @staticmethod
-    def cl_8_2_2_Unsupported_beam_bending_non_slenderness( E, meu,Iy, It, Iw, Llt,beta_b, Zp, hf,ry, tf):
-        ''' Author : Rutvik Joshi
-        Clauses: 8.2.2.1 and Annex E
-        '''
-        G = E/(2+2*meu)
-        fcrb = (1.1 * math.pi**2 * E/(Llt/ry)**2) * math.sqrt(1 + (((Llt/ry)/(hf/tf))**2) / 20)
-        _ = math.sqrt((math.pi**2 * E * Iy/Llt**2)*(G *It + (math.pi**2 * E * Iw/Llt**2) ))
-        __ = beta_b * Zp * fcrb
-        ___ = (math.pi**2 * E * Iy * hf/Llt**2)/2 * math.sqrt(1 + (((Llt/ry)/(hf/tf))**2) / 20 )
-        return [min(_,__,___), fcrb]
+    def ltb_elastic_moment(E, G, iy, it, iw, length):
+        """15.2.2.1 simply supported prismatic symmetric section, Mcr in N mm."""
+        _positive(E, G, iy, it, length)
+        if iw < 0:
+            raise ValueError("Warping constant must be nonnegative")
+        k = math.pi**2*E/length**2
+        return math.sqrt(k*iy*(G*it+k*iw))
+
+    @staticmethod
+    def rolled_beam_fcrb(E, length_over_ry, hf_over_tf):
+        """15.2.2.1 approximation for a non-slender rolled section, in MPa."""
+        _positive(E, length_over_ry, hf_over_tf)
+        return (1.1*math.pi**2*E / length_over_ry**2
+                * math.sqrt(1 + (length_over_ry/hf_over_tf)**2/20))
 
     @staticmethod
     def cl_8_2_2_Unsupported_beam_bending_fcrb(E, Llt_ry, hf_tf):
