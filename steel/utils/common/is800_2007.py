@@ -929,21 +929,11 @@ class IS800_2007(object):
 
     # 10.3.3.3 Packing Plates
     @staticmethod
-    def cl_10_3_3_3_packing_plates(t=0.0):
-        """ Calculate reduction factor for packing plates.
-        Args:
-            t = thickness of the thickest packing plate, in mm
-        Return:
-            beta_pk = Reduction factor for packing plates (float) if applicable
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.3.3.3
-        """
-        if t > 6.0:
-            beta_pk = (1.0 - 0.0125 * t)
-        else:
-            beta_pk = 1.0
-        return beta_pk
+    def packing_factor(t):
+        """17.3.3.3. Thickness of thicker packing in mm."""
+        if not math.isfinite(t) or t < 0 or t >= 80:
+            raise ValueError("Packing outside positive-factor domain")
+        return 1-.0125*t if t > 6 else 1
 
     # cl. 10.3.4 Bearing Capacity of the Bolt
     @staticmethod
