@@ -1111,6 +1111,30 @@ class IS800_2025_Draft:
         exponent = 2 if both_steel else 1.5
         return (tension / tension_resistance) ** exponent + (shear / shear_resistance) ** exponent
 
+    @staticmethod
+    def corrugated_moment(hw, bc, tc, bt, tt, ffc, fft):
+        """H-1. N mm. Supply flange stresses after transverse bending and compression
+        stability checks, before division by gamma_m0. Web carries no flexure.
+        """
+        _positive(hw, bc, tc, bt, tt, ffc, fft)
+        return min(bc * tc * ffc, bt * tt * fft) * (hw + (tc + tt) / 2) / 1.1
+
+    @staticmethod
+    def corrugated_shear(hw, tw, fyw, critical_local, critical_global):
+        """H-2. Design shear in N from geometry-specific elastic critical stresses in MPa."""
+        _positive(hw, tw, fyw, critical_local, critical_global)
+        shear_yield = fyw / math.sqrt(3)
+        local_slenderness = math.sqrt(shear_yield / critical_local)
+        if local_slenderness <= 0.8:
+            local = 1.0
+        elif local_slenderness < 1.2:
+            local = 1 - 0.8 * (local_slenderness - 0.8)
+        else:
+            local = 1 / (math.sqrt(3) * local_slenderness ** 2)
+        global_factor = min(1.0, 1.5 / (0.5 + shear_yield / critical_global))
+        interaction = local * global_factor / math.hypot(local, global_factor)
+        return hw * tw * shear_yield * min(local, global_factor, interaction) / 1.1
+
 
 IS800_2025_Project = IS800_2025_Draft
 
