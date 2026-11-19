@@ -1037,28 +1037,16 @@ class IS800_2007(object):
             return 0.7 * min(part1_thickness, part2_thickness)
 
     @staticmethod
-    def cl_10_5_3_2_factor_for_throat_thickness(fusion_face_angle=90):
-
-        table_22 = {'60-90': 0.70, '91-100': 0.65, '101-106': 0.60, '107-113': 0.55, '114-120': 0.50}
-        fusion_face_angle = int(round(fusion_face_angle))
-        if 60 <= fusion_face_angle <= 90:
-            K = table_22['60-90']
-        elif 91 <= fusion_face_angle <= 100:
-            K = table_22['91-100']
-        elif 101 <= fusion_face_angle <= 106:
-            K = table_22['101-106']
-        elif 107 <= fusion_face_angle <= 113:
-            K = table_22['107-113']
-        elif 114 <= fusion_face_angle <= 120:
-            K = table_22['114-120']
-        else:
-            K = "NOT DEFINED"
-        try:
-            K = float(K)
-        except ValueError:
-            return
-
-        return K
+    def weld_throat(size, angle):
+        """17.5.3.1-2, Table 22. Check actual throat against 3 mm minimum."""
+        _positive(size)
+        for lo, hi, k in ((60,90,.70),(91,100,.65),(101,106,.60),(107,113,.55),(114,120,.50)):
+            if lo <= angle <= hi:
+                throat = k*size
+                if throat < 3:
+                    raise ValueError("Actual effective throat is below 3 mm")
+                return throat
+        raise ValueError("Fusion angle outside a printed Table 22 interval")
 
 
     @staticmethod
