@@ -289,33 +289,11 @@ class IS800_2007(object):
 
     # cl. 7.4.1, General
     @staticmethod
-    def cl_7_4_1_bearing_strength_concrete(concrete_grade):
-        """
-        Args:
-            concrete_grade: grade of concrete used for pedestal/footing (str).
-
-        Returns:
-            maximum permissible bearing strength of concrete pedestal/footing (float).
-
-        Note:
-            cl 7.4.1 suggests the maximum bearing strength equal to 0.60 times f_ck,
-            but, the value is amended to 0.45 times f_ck (f_ck is the characteristic strength of concrete)
-        """
-        f_ck = {
-            'M10': 10,
-            'M15': 15,
-            'M20': 20,
-            'M25': 25,
-            'M30': 30,
-            'M35': 35,
-            'M40': 40,
-            'M45': 45,
-            'M50': 50,
-            'M55': 55,
-        }[str(concrete_grade)]
-
-        bearing_strength = 0.45 * f_ck  # MPa (N/mm^2)
-        return bearing_strength
+    def bearing_pressure(fck_concrete, fck_bedding, pedestal_area, base_contact_area):
+        """14.4.1. Concrete and bedding characteristic cube strengths in MPa."""
+        _positive(fck_concrete, fck_bedding, pedestal_area, base_contact_area)
+        fck = min(fck_concrete, fck_bedding)
+        return min(0.45 * math.sqrt(pedestal_area/base_contact_area), 0.9) * fck
 
     # cl. 7.1, Design strength
     @staticmethod
