@@ -481,11 +481,13 @@ class IS800_2007(object):
         return min(width,length_between_inflections/divisor)
 
     @staticmethod
-    def cl_8_2_2_Unsupported_beam_bending_strength(Zp, Ze, fcd, section_class):
-        if section_class == KEY_Plastic or section_class == KEY_Compact:
-            return Zp * fcd
-        else:
-            return Ze * fcd
+    def ltb_moment(section_class, zp, ze, fbd, *, zeff=None):
+        """15.2.2. N mm. Class 4 requires effective modulus at compression fibre."""
+        modulus = {"Plastic": zp, "Compact": zp, "Semi-Compact": ze, "Slender": zeff}[section_class]
+        if modulus is None:
+            raise ValueError("Supply effective modulus for class 4")
+        _positive(modulus, fbd)
+        return modulus*fbd
 
     @staticmethod
     def cl_8_2_2_Unsupported_beam_bending_compressive_stress(X_lt, fy, gamma_mo):
