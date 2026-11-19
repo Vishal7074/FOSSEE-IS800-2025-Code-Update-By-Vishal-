@@ -316,35 +316,14 @@ class IS800_2007(object):
 
     # cl. 7.2.2 Effective Length of Prismatic Compression Members
     @staticmethod
-    def cl_7_2_2_effective_length_of_prismatic_compression_members(unsupported_length, end_1='Fixed', end_2='Fixed'):
-        """
-        Calculate the effective length of the member as per Cl. 7.2.2 (Table 11) of IS 800:2007
-
-        Args:
-            unsupported_length: unsupported length of the member about any axis in mm (float)
-            end_1: End condition at end 1 of the member (string)
-            end_2: End condition at end 2 of the member (string)
-
-        Returns:
-            Effective length in mm
-        """
-
-        if end_1 == 'Fixed' and end_2 == 'Fixed':
-            effective_length = 0.65 * unsupported_length
-        elif end_1 == 'Fixed' and end_2 == 'Hinged':
-            effective_length = 0.8 * unsupported_length
-        elif end_1 == 'Fixed' and end_2 == 'Roller':
-            effective_length = 1.2 * unsupported_length
-        elif end_1 == 'Hinged' and end_2 == 'Hinged':
-            effective_length = 1.0 * unsupported_length
-        elif end_1 == 'Hinged' and end_2 == 'Roller':
-            effective_length = 2.0 * unsupported_length
-        elif end_1 == 'Fixed' and end_2 == 'Free':
-            effective_length = 2.0 * unsupported_length
-        else:
-            effective_length = 2.0 * unsupported_length
-
-        return effective_length
+    def effective_length(length, first_end, second_end):
+        """14.2.2 Table 11. 'guided' permits translation and restrains rotation."""
+        _positive(length)
+        ends = tuple(sorted((first_end, second_end)))
+        factors = {("fixed","free"): 2, ("guided","pinned"): 2,
+                   ("pinned","pinned"): 1, ("fixed","guided"): 1.2,
+                   ("fixed","pinned"): .8, ("fixed","fixed"): .65}
+        return factors[ends]*length
 
     @staticmethod
     def cl_7_2_4_effective_length_of_truss_compression_members(length, section_profile = 'Angles'):
