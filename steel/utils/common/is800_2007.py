@@ -326,33 +326,14 @@ class IS800_2007(object):
         return factors[ends]*length
 
     @staticmethod
-    def cl_7_2_4_effective_length_of_truss_compression_members(length, section_profile = 'Angles'):
-        """
-        Calculate the effective length of the member as per Cl. 7.5.2.1 (Table 11) of IS 800:2007
-
-        Args:
-            unsupported_length: actual length of the member about any axis in mm (float)
-            end_1: End condition at end 1 of the member (string)
-            end_2: End condition at end 2 of the member (string)
-
-        Returns:
-            Effective length in mm
-        """
-
-        if section_profile == 'Angles':
-            effective_length = 1 * length
-        elif section_profile == 'Back to Back Angles':
-            effective_length = 0.85 * length
-        elif section_profile == 'Channels':
-            print('NEED TO CHECK AGAIN')
-            effective_length = 1 * length
-        elif section_profile == 'Back to Back Channels':
-            print('NEED TO CHECK AGAIN')
-            effective_length = 0.85 * length
-        else:
-            effective_length = 1 * length
-
-        return effective_length
+    def truss_length(length, *, plane, restraint_factor=None):
+        """14.2.4. General truss compression members; see 14.5 for angle struts."""
+        _positive(length)
+        if plane == "out-of-plane":
+            return length
+        if plane != "in-plane" or restraint_factor is None or not .7 <= restraint_factor <= 1:
+            raise ValueError("In-plane restraint requires a justified factor in [0.7, 1]")
+        return length*restraint_factor
 
     # cl. 7.1.2.1, Design stress
     @staticmethod
