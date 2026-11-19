@@ -565,18 +565,15 @@ class IS800_2007(object):
         return length*factors[loading][support_row-1][top_row-1]
     # cl. 8.4.1 shear strength of bolted connections
     @staticmethod
+    def design_shear_yield(av, fy):
+        """15.4.1. Design shear resistance in N where shear yielding governs."""
+        _positive(av, fy)
+        return av*fy/(math.sqrt(3)*1.1)
+
+    @staticmethod
     def cl_8_4_design_shear_strength(A_vg, f_y):
-        """ Calculate the design shear strength in yielding as per cl. 8.4
-
-        Args:
-             A_vg: Gross area of the component in square mm (float)
-             f_y: Yield stress of the component material in MPa (float)
-
-        Returns:
-             Design shear strength in yielding of the component in N
-
-        """
-        gamma_m0 = IS800_2007.cl_5_4_1_Table_5["gamma_m0"]['yielding']
+        """Draft 15.4.1. Retained project calculation and units."""
+        gamma_m0 = IS800_2025_Draft.material_factors["gamma_m0"]['yielding']
         V_d = ((A_vg * f_y) / (math.sqrt(3) * gamma_m0))  # N
 
         return V_d
