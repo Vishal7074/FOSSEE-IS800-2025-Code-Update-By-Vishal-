@@ -232,13 +232,15 @@ class IS800_2007(object):
     # -------------------------------------------------------------
 
     @staticmethod
+    def tension_yield(ag, fy):
+        """13.2, gross section yielding strength (N)."""
+        _positive(ag, fy)
+        return ag*fy/1.1
+
+    @staticmethod
     def cl_6_2_tension_yielding_strength(A_g, f_y):
-        """Calcualte the tension rupture capacity of plate as per clause 6.3.1
-        :param A_g: gross area of cross section
-        :param f_y: yield stress of the material
-        :return: design strength in tension yielding
-        """
-        gamma_m0 = IS800_2007.cl_5_4_1_Table_5["gamma_m0"]['yielding']
+        """Draft 13.2. Retained project calculation and units."""
+        gamma_m0 = IS800_2025_Draft.material_factors["gamma_m0"]['yielding']
         T_dg = A_g * f_y / gamma_m0
         return T_dg
     # ------------------------------------------------------------
