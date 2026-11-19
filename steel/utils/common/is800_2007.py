@@ -490,6 +490,14 @@ class IS800_2007(object):
         return modulus*fbd
 
     @staticmethod
+    def ltb_design_stress(chi_lt, fy):
+        """15.2.2. Beam bending compressive stress in MPa."""
+        _positive(chi_lt, fy)
+        if chi_lt > 1:
+            raise ValueError("chi_LT exceeds unity")
+        return chi_lt*fy/1.1
+
+    @staticmethod
     def cl_8_2_2_Unsupported_beam_bending_compressive_stress(X_lt, fy, gamma_mo):
         return X_lt * fy / gamma_mo
 
