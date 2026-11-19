@@ -884,17 +884,14 @@ class IS800_2007(object):
 
     # cl. 10.3.2 Design strength of bearing type bolt
     @staticmethod
+    def bearing_bolt_capacity(shear_resistance, bearing_resistance):
+        """17.3.2. Use design resistances after applicable reductions, in N."""
+        _positive(shear_resistance, bearing_resistance)
+        return min(shear_resistance,bearing_resistance)
+
+    @staticmethod
     def cl_10_3_2_bolt_design_strength(V_dsb, V_dpb):
-        """Calculate design strength of bearing type bolt
-        Args:
-            V_dsb - Design shear strength of bearing bolt in N (float)
-            V_dpb - Design bearing strength of bolt on the plate in N (float)
-        Returns:
-            V_db - Design strength of bearing bolt in N (float)
-        Note:
-            Reference:
-            IS 800:2007,  cl 10.3.2
-        """
+        """Draft 17.3.2. Retained project calculation and units."""
         V_db = min(V_dsb, V_dpb)
         return V_db
 
