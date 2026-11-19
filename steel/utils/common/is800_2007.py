@@ -994,42 +994,14 @@ class IS800_2007(object):
         return (V_sf / V_df) ** 2 + (T_f / T_df) ** 2
 
     @staticmethod
-    def cl_10_4_7_bolt_prying_force(T_e, l_v, f_o, b_e, t, f_y, end_dist, pre_tensioned='', eta=1.5):
-        """Calculate prying force of friction grip bolt
-                       Args:
-                          2 * T_e - Force in 2 bolts on either sides of the web/plate
-                          l_v - distance from the bolt centre line to the toe of the fillet weld or to half
-                                the root radius for a rolled section,
-                          beta - 2 for non pre-tensioned bolt and 1 for pre-tensioned bolt
-                          eta - 1.5
-                          b_e - effective width of flange per pair of bolts
-                          f_o - proof stress in consistent units
-                          t - thickness of the end plate
-                       return:
-                           Prying force of friction grip bolt
-                       Note:
-                           Reference:
-                           IS 800:2007,  cl 10.4.7
-        """
-        if pre_tensioned == 'Pre-tensioned':
-            beta = 1
-        else:
-            beta = 2
-
-        le_1 = end_dist
-        le_2 = (1.1 * t) * math.sqrt((beta * f_o) / f_y)  # here f_o is taken as N/mm^2
-        l_e = min(le_1, le_2)
-
-        # # Note: In the below equation of Q, f_o is taken as kN since the value of T_e is in kN
-        # Q = (l_v / (2 * l_e)) * (T_e - ((beta * eta * f_o * b_e * 1e-3 * t ** 4) / (27 * l_e * l_v ** 2)))  # kN
-
-        # All Calculations are in N-mm. Please pass arguments accordingly.
-        Q = (l_v / (2 * l_e)) * (T_e - ((beta * eta * f_o * b_e * t ** 4) / (27 * l_e * l_v ** 2)))  # N
-
-        if Q < 0:
-            Q = 0.0
-
-        return round(Q, 2)  # N
+    def prying_force(te, lv, proof_stress, width_per_pair, t, fy, end, *, pretensioned):
+        """17.4.7. Additional tensile force per bolt (N), for specified end plate."""
+        _positive(lv, proof_stress, width_per_pair, t, fy, end)
+        if te < 0 or not isinstance(pretensioned, bool):
+            raise ValueError("Supply tensile force magnitude and boolean pretensioned")
+        beta = 1 if pretensioned else 2
+        le = min(end, 1.1*t*math.sqrt(beta*proof_stress/fy))
+        return max(0, lv/(2*le)*(te-beta*1.5*proof_stress*width_per_pair*t**4/(27*le*lv**2)))
 
     # -------------------------------------------------------------
     #   10.5 Welds and Welding
