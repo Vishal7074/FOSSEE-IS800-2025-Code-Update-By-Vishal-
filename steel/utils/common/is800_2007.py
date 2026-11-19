@@ -432,6 +432,16 @@ class IS800_2007(object):
     #   8.4 Shear
     # -------------------------------------------------------------
     @staticmethod
+    def web_shear_buckling_required(d, tw, fyw, *, kv=None):
+        """15.4.2.1. Omit kv only for a web without stiffeners."""
+        _positive(d, tw, fyw)
+        factor = 1
+        if kv is not None:
+            _positive(kv)
+            factor = math.sqrt(kv/5.35)
+        return d/tw > 67*math.sqrt(250/fyw)*factor
+
+    @staticmethod
     def cl_8_2_1_web_buckling(d, tw, e):
         d_tw = d / tw
         if d_tw <= 67*e:
