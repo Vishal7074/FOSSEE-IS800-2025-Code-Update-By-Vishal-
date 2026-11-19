@@ -1226,6 +1226,24 @@ class IS800_2025_Draft:
             return 1 + temperature / (2000 * math.log(temperature / 1100))
         return 690 * (1 - temperature / 1000) / (temperature - 53.5)
 
+    @staticmethod
+    def stiff_bearing_length(contact_length, solid_thickness, available_left, available_right):
+        """15.7.1.3, Fig. 15. One solid prismatic layer, 45 degree dispersion.
+        Distances on either side are measured from the loaded footprint to each free edge.
+        """
+        _positive(contact_length)
+        if any(not math.isfinite(x) or x < 0 for x in (solid_thickness, available_left, available_right)):
+            raise ValueError("Use nonnegative material extents in mm")
+        return contact_length + min(available_left, solid_thickness) + min(available_right, solid_thickness)
+
+    @staticmethod
+    def local_web_bearing(stiff_length, junction_dispersion, web_thickness, web_fy):
+        """15.7.4 and H-3. Local web resistance Fw in N. Supply n2 from 1:2.5 dispersion."""
+        _positive(stiff_length, web_thickness, web_fy)
+        if not math.isfinite(junction_dispersion) or junction_dispersion < 0:
+            raise ValueError("Use a nonnegative junction dispersion length in mm")
+        return (stiff_length + junction_dispersion) * web_thickness * web_fy / 1.1
+
 
 IS800_2025_Project = IS800_2025_Draft
 
