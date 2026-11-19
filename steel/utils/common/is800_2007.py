@@ -355,23 +355,9 @@ class IS800_2007(object):
 
     # Cl. 7.1.1, Cl.7.1.2.1, Imperfection Factor
     @staticmethod
-    def cl_7_1_2_1_imperfection_factor(buckling_class=''):
-        """
-        Determine the Imperfection Factor of the cross-section as per Cl 7.1.1, Cl.7.1.2.1 (Table 7) of IS 800:2007
-
-        Args:
-            buckling_class (string)
-
-        Returns: Imperfection factor value (string)
-        """
-        imperfection_factor = {
-            'a': 0.21,
-            'b': 0.34,
-            'c': 0.49,
-            'd': 0.76
-        }[buckling_class]
-
-        return imperfection_factor
+    def imperfection_factor(curve):
+        """Table 7. Column imperfection factor."""
+        return {"a0": 0.13, "a": 0.21, "b": 0.34, "c": 0.49, "d": 0.76}[curve]
 
     # cl. 7.1.2.1, Buckling Class of Cross-Sections
     @staticmethod
