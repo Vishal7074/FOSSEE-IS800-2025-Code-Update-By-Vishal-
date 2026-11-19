@@ -1036,6 +1036,35 @@ class IS800_2025_Draft:
             return "ordinary-permitted"
         return "special-required"
 
+    @staticmethod
+    def ocbf_brace_checks(section_class, slenderness, compression, resistance, gross_yield,
+                          net_rupture, *, built_up, component_slenderness=None, central_bolts=None):
+        """18.4.3.1. Return individual checks. Compression is a demand magnitude."""
+        _positive(slenderness, resistance, gross_yield, net_rupture)
+        if not math.isfinite(compression) or compression < 0 or type(built_up) is not bool:
+            raise ValueError("Invalid compression demand or built-up flag")
+        if section_class not in ('Plastic', 'Compact', 'Semi-Compact', 'Slender'):
+            raise ValueError("Unknown cross-section class")
+        checks = dict(section=section_class != 'Slender', slenderness=slenderness <= 120,
+                      compression=compression <= 0.8 * resistance, yielding=gross_yield < net_rupture)
+        if built_up:
+            _positive(component_slenderness)
+            if type(central_bolts) is not bool:
+                raise ValueError("Identify bolts in the central quarter")
+            checks.update(tack_spacing=component_slenderness <= 0.4 * slenderness,
+                          central_quarter=not central_bolts)
+        return checks
+
+    @staticmethod
+    def brace_connection_actions(fy, gross_area, combination_force, transferable_force, plastic_moment):
+        """18.4.4.6. Return tensile force (N), moment (N mm) about buckling axis.
+        Check rupture, block shear and gusset out-of-plane buckling separately.
+        """
+        _positive(fy, gross_area, plastic_moment)
+        if any(not math.isfinite(x) or x < 0 for x in (combination_force, transferable_force)):
+            raise ValueError("Supply nonnegative force magnitudes")
+        return min(1.2 * fy * gross_area, combination_force, transferable_force), 1.2 * plastic_moment
+
 
 IS800_2025_Project = IS800_2025_Draft
 
