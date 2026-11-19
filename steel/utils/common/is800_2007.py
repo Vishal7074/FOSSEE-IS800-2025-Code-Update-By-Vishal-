@@ -531,13 +531,7 @@ class IS800_2007(object):
         return (1.1*math.pi**2*E / length_over_ry**2
                 * math.sqrt(1 + (length_over_ry/hf_over_tf)**2/20))
 
-    @staticmethod
-    def cl_8_2_2_Unsupported_beam_bending_fcrb(E, Llt_ry, hf_tf):
-        ''' Author : Rutvik Joshi
-        Clauses: 8.2.2.1 and Annex E
-        '''
-        fcrb = 1.1 * math.pi**2 * E * (1 + (Llt_ry/hf_tf)**2/20)**0.5 / Llt_ry
-        return fcrb
+    # Draft 15.2.2.1: Correct squared slenderness denominator in approximation.
     @staticmethod
     def cl_8_2_2_1_elastic_buckling_moment(betab, Zp, Ze, fy, Mcr, fcrb = 0):
         if (betab * Zp * fy / Mcr) ** 0.5 <= (1.2 * Ze * fy / Mcr) ** 0.5:
