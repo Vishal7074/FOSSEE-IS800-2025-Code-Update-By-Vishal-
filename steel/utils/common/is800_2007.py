@@ -979,6 +979,23 @@ class IS800_2025_Draft:
             raise ValueError("Thickness/grade has no printed yield strength")
         return values[index]
 
+    @staticmethod
+    def thermal_movement(length, delta_temperature):
+        """9.2.4.1(e), 10.5. Free movement in mm, positive for expansion.
+        Restraint forces require a separate structural analysis.
+        """
+        _positive(length)
+        if not math.isfinite(delta_temperature):
+            raise ValueError("Temperature change must be finite")
+        return 12e-6 * length * delta_temperature
+
+    @staticmethod
+    def fire_load_effect(dead, imposed, fire_restraint, *, storage):
+        """10.3 and Table 4(v). Combine signed effects in the same units."""
+        if type(storage) is not bool or not all(map(math.isfinite, (dead, imposed, fire_restraint))):
+            raise ValueError("Supply finite load effects and a boolean storage flag")
+        return dead + (imposed if storage else 0.5 * imposed) + fire_restraint
+
 
 IS800_2025_Project = IS800_2025_Draft
 
