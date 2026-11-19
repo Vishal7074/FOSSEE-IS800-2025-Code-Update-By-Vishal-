@@ -337,35 +337,21 @@ class IS800_2007(object):
 
     # cl. 7.1.2.1, Design stress
     @staticmethod
-    def cl_7_1_2_1_design_compressisive_stress(f_y, gamma_mo, effective_slenderness_ratio , imperfection_factor, modulus_of_elasticity, check_type ):
-        """
-        Args:
-            f_y:Yield stress                                                                        (float)
-            gamma_mo:Effective length of member                                                        (float)
-            effective_slenderness_ratio:Euler buckling class                                                       (float)
-            imperfection_factor
-            modulus_of_elasticity
+    def column_table(curve, kl_over_r, fy):
+        """Tables 8 and 9. Returns (chi, fcd in MPa) for exact printed grid points."""
+        rows = _COLUMN_TABLES[curve]
+        try:
+            index = _COLUMN_FY.index(fy)
+            chi, stress = rows[kl_over_r]
+        except (ValueError, KeyError) as exc:
+            raise ValueError("Use an explicit tabulated fy and KL/r") from exc
+        return chi[index], stress[index]
 
-        Returns:
-            list of euler_buckling_stress, nondimensional_effective_slenderness_ratio, phi, stress_reduction_factor, design_compressive_stress_fr .design_compressive_stress, design_compressive_stress_min
-        Note:
-            Reference: IS 800 pg34
-            @author:Rutvik Joshi
-        """
-        # 2.4 - Euler buckling stress
-        euler_buckling_stress = (math.pi ** 2 * modulus_of_elasticity) / effective_slenderness_ratio ** 2
-        if 'Concentric' in check_type:
-            # 2.5 - Non-dimensional effective slenderness ratio
-            nondimensional_effective_slenderness_ratio = math.sqrt(f_y / euler_buckling_stress)
-        elif 'Leg' in check_type:
-            nondimensional_effective_slenderness_ratio = check_type[1]
-        phi = 0.5 * (1 + imperfection_factor * (nondimensional_effective_slenderness_ratio - 0.2) + nondimensional_effective_slenderness_ratio ** 2)
-        # 2.6 - Design compressive stress
-        stress_reduction_factor = 1/(phi + math.sqrt(phi**2 - nondimensional_effective_slenderness_ratio**2))
-        design_compressive_stress_fr = f_y * stress_reduction_factor / gamma_mo
-        design_compressive_stress_max = f_y / gamma_mo
-        design_compressive_stress = min(design_compressive_stress_fr , design_compressive_stress_max)
-        return [euler_buckling_stress, nondimensional_effective_slenderness_ratio, phi, stress_reduction_factor,design_compressive_stress_fr, design_compressive_stress, design_compressive_stress_max]                                                                                  #kN/cm2
+    @staticmethod
+    def compression_stress(chi, fy):
+        """14.1.2. Design compressive stress from governing reduction factor."""
+        _positive(chi, fy)
+        return min(chi,1)*fy/1.1
 
     # Cl. 7.1.1, Cl.7.1.2.1, Imperfection Factor
     @staticmethod
