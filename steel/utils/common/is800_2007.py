@@ -458,13 +458,12 @@ class IS800_2007(object):
 
 
     @staticmethod
-    def cl_8_2_1_2_high_shear_check(V, Vd):
-        if V > 0.6 * Vd :
-            print('High shear')
-            return True
-        else:
-            print('Low shear')
-            return False
+    def beam_high_shear(v, vd):
+        """15.2.1.2-3. Supply magnitudes in the same units."""
+        _positive(vd)
+        if not math.isfinite(v) or v < 0:
+            raise ValueError("Supply nonnegative shear magnitude")
+        return v > .6*vd
 
     @staticmethod
     def cl_8_2_1_4_holes_tension_zone(Anf_Agf, fy, fu, gamma_mo, gamma_m1):
