@@ -996,6 +996,14 @@ class IS800_2025_Draft:
             raise ValueError("Supply finite load effects and a boolean storage flag")
         return dead + (imposed if storage else 0.5 * imposed) + fire_restraint
 
+    @staticmethod
+    def fire_yield_strength(fy20, temperature):
+        """Mild or high-strength low-alloy steel only. MPa and degrees Celsius."""
+        _positive(fy20)
+        if not 20 <= temperature <= 905:
+            raise ValueError("Supported steel temperature is 20 to 905 degrees Celsius")
+        return fy20 * min(1.0, (905 - temperature) / 690)
+
 
 IS800_2025_Project = IS800_2025_Draft
 
