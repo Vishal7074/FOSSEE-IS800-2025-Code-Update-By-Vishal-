@@ -720,12 +720,35 @@ class IS800_2007(object):
     
 
     @staticmethod
-    def cl_8_6_1_1_plate_girder_minimum_web_a(D,tw,epsilon,tf_top,tf_bot):
-        d = D - (tf_top + tf_bot)
-        if d/tw < 200 * epsilon:
-            return True
-        else:   
-            return False
+    def web_thickness_ok(d, tw, fyw, fyf, *, stiffening, spacing=None, edges=2):
+        """15.6.1.1-2. Check serviceability and compression flange buckling."""
+        _positive(d, tw, fyw, fyf)
+        eps_w, eps_f = math.sqrt(250/fyw), math.sqrt(250/fyf)
+        if edges not in (1, 2):
+            raise ValueError("edges must be 1 or 2")
+        if stiffening != "none":
+            if edges != 2 or spacing is None:
+                raise ValueError("Stiffened rows require both edges connected and spacing")
+            _positive(spacing)
+        if stiffening == "none" or (stiffening == "transverse" and spacing > 3*d):
+            sv = (200 if edges == 2 else 90)*eps_w
+            return d/tw <= min(sv, 345*eps_f**2)
+        buckling = 345*(eps_f**2 if spacing >= 1.5*d else eps_f)
+        ratio = d/tw
+        if stiffening == "two-longitudinal":
+            sv = 400*eps_w
+        elif stiffening in ("transverse", "one-longitudinal"):
+            one = stiffening == "one-longitudinal"
+            if one and (spacing > 2.4*d or spacing == .74*d):
+                raise NotImplementedError("Spacing outside explicit 15.6.1.1(c) rows")
+            sv = (250 if one else 200)*eps_w
+            if spacing < .74*d:
+                sv = (340 if one else 270)*eps_w
+            elif spacing < d:
+                ratio = spacing/tw
+        else:
+            raise ValueError("Unknown stiffener arrangement")
+        return ratio <= sv and d/tw <= buckling
 
     @staticmethod   
     def cl_8_6_1_1_and_8_6_1_2_web_thickness_check(d, tw, eps, stiffener_type, c=None):
